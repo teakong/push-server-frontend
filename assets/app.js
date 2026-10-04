@@ -313,6 +313,15 @@
   var channelRows = [];     /* channel/list 渲染用行（含完整 channelCode） */
   var channelsMeta = null;  /* channel/list 顶层父通道信息 */
 
+  /* 通道码输入框的默认示例文案；ping 拿到真实示例通道码后会被替换 */
+  var DEFAULT_CODE_PLACEHOLDER = '粘贴 32 位通道码，如 4d05f4abdb0a0c2a0269900809946903';
+  function updateCodePlaceholder() {
+    var input = el('codeInput');
+    if (!input) { return; }
+    var code = demoChannel && demoChannel.channelCode;
+    input.placeholder = code ? ('粘贴 32 位通道码，如 ' + code) : DEFAULT_CODE_PLACEHOLDER;
+  }
+
   /* ---------------- 推送测试卡片 ---------------- */
 
   async function loadDemo() {
@@ -326,10 +335,12 @@
       var rows = (biz.data && biz.data.rows) || [];
       if (!rows.length) {
         box.style.display = 'none';
+        updateCodePlaceholder();
         toast('官方示例通道暂不可用（ping 返回空），请设置自己的通道码后再测试', 'err', 6000);
         return;
       }
       demoChannel = rows[0];
+      updateCodePlaceholder();
       el('demoQr').src = demoChannel.qrCodeUrl || '';
       el('demoQr').title = '点击放大';
       el('demoQr').style.cursor = 'zoom-in';
@@ -350,6 +361,7 @@
       el('sendTargetTip').textContent = '将推送到官方示例通道「' + (demoChannel.channelName || '在线体验') + '」';
     } catch (e) {
       box.style.display = 'none';
+      updateCodePlaceholder();
       toast('无法连接官方服务（' + e.message + '）。若以 file:// 打开请改用 http://localhost 访问', 'err', 6000);
     }
   }
@@ -929,6 +941,7 @@
     clearCode();
     dropToken();
     demoChannel = null;
+    updateCodePlaceholder();
     closeModal('settingsModal');
     updateCodeBtn();
     renderPushCard();
