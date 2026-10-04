@@ -63,6 +63,80 @@
     });
   }
 
+  /**
+   * 大整数安全 JSON 解析。
+   * 背景：JS 只有 IEEE-754 双精度，JSON.parse 遇到超过 MAX_SAFE_INTEGER 的整数会丢精度
+   * （如 messageIdList 里的 1688754255588143105 → 1688754255588143000）。
+   * 方案：解析前先扫描原文，把超限的「整数字面量」包成字符串字面量，再交给 JSON.parse，
+   *      于是这些 ID 以字符串形式落地，数字精度原样保留。
+   * 注意：字符串字面量内部（含转义）整段跳过，不会误伤 content.text 里的 JSON 串。
+   */
+  var MAX_SAFE_DIGITS = String(Number.MAX_SAFE_INTEGER); // "9007199254740991"
+
+  function isUnsafeIntDigits(digits) {
+    digits = String(digits).replace(/^0+(?=\d)/, '');   // 去掉前导 0
+    if (digits.length < MAX_SAFE_DIGITS.length) { return false; }
+    if (digits.length > MAX_SAFE_DIGITS.length) { return true; }
+    return digits > MAX_SAFE_DIGITS;                    // 等长数值字符串可直接字典序比较
+  }
+
+  var NUM_RE = /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/y;     // sticky，从 lastIndex 精确匹配
+
+  function quoteUnsafeInts(text) {
+    text = String(text);
+    var out = '';
+    var i = 0, n = text.length;
+    while (i < n) {
+      var ch = text.charAt(i);
+      /* 字符串字面量：整段原样拷贝，避免把 "text":"{...}" 里的数字给改了 */
+      if (ch === '"') {
+        var j = i + 1;
+        while (j < n) {
+          var c = text.charAt(j);
+          if (c === '\\') { j += 2; continue; }
+          if (c === '"') { break; }
+          j++;
+        }
+        j = Math.min(j, n - 1);
+        out += text.slice(i, j + 1);
+        i = j + 1;
+        continue;
+      }
+      /* 数字字面量 */
+      if ((ch >= '0' && ch <= '9') || (ch === '-' && /[0-9]/.test(text.charAt(i + 1)))) {
+        NUM_RE.lastIndex = i;
+        var m = NUM_RE.exec(text);
+        if (m) {
+          var raw = m[0];
+          if (!/[\.eE]/.test(raw) && isUnsafeIntDigits(raw.replace(/^-/, ''))) {
+            out += '"' + raw + '"';
+          } else {
+            out += raw;
+          }
+          i += raw.length;
+          continue;
+        }
+      }
+      out += ch;
+      i++;
+    }
+    return out;
+  }
+
+  function parseJsonSafe(text) {
+    return JSON.parse(quoteUnsafeInts(text));
+  }
+
+  /** fetch 后按安全模式取 JSON（替代 resp.json()），并统一处理非 JSON 响应 */
+  async function readJson(resp) {
+    var text = await resp.text();
+    try {
+      return parseJsonSafe(text);
+    } catch (e) {
+      throw new Error('接口响应不是 JSON（HTTP ' + resp.status + '）');
+    }
+  }
+
   function toast(msg, type, ms) {
     var box = el('toasts');
     var d = document.createElement('div');
@@ -156,13 +230,13 @@
     var text = await resp.text();
     var env;
     try {
-      env = JSON.parse(text);
+      env = parseJsonSafe(text);
     } catch (e) {
       /* SSE 格式兜底：逐行找 data: 前缀 */
       env = null;
       text.split(/\r?\n/).forEach(function (line) {
         if (!env && line.indexOf('data:') === 0) {
-          try { env = JSON.parse(line.slice(5).trim()); } catch (e2) {}
+          try { env = parseJsonSafe(line.slice(5).trim()); } catch (e2) {}
         }
       });
       if (!env) { throw new Error('MCP 响应解析失败'); }
@@ -171,7 +245,8 @@
     var content = env.result && env.result.content && env.result.content[0];
     if (!content || !content.text) { throw new Error('MCP 返回缺少 content'); }
     var biz;
-    try { biz = JSON.parse(content.text); } catch (e) { throw new Error(content.text); }
+    /* content.text 里是业务 JSON 字符串，同样按大整数安全模式解析 */
+    try { biz = parseJsonSafe(content.text); } catch (e) { throw new Error(content.text); }
     if (biz.code !== 0) { throw new Error(biz.message || 'MCP 业务错误 code=' + biz.code); }
     return biz.data;
   }
@@ -211,7 +286,7 @@
       if (!retried) { dropToken(); return oauth(path, params, isPost, true); }
       throw new Error('令牌无效（access_token 不正确），请检查通道码');
     }
-    var biz = await resp.json().catch(function () { throw new Error('接口响应不是 JSON（HTTP ' + resp.status + '）'); });
+    var biz = await readJson(resp);
     if (biz.code !== 0) {
       var err = new Error(biz.message || ('业务错误 code=' + biz.code));
       err.biz = biz;
@@ -247,7 +322,7 @@
     el('demoName').textContent = '示例通道加载中…';
     try {
       var resp = await fetch(PING_URL, { headers: { 'Accept': 'application/json' } });
-      var biz = await resp.json();
+      var biz = await readJson(resp);
       var rows = (biz.data && biz.data.rows) || [];
       if (!rows.length) {
         box.style.display = 'none';
@@ -577,7 +652,7 @@
     if (avatar && !isUrl(avatar)) { toast(avatar + "头像不合法，已忽略", 'ok', 6000); }
     try {
       var resp = await fetch(buildTestApiUrl(), { method: 'GET', headers: { 'Accept': 'application/json' } });
-      var biz = await resp.json().catch(function () { throw new Error('接口响应异常（HTTP ' + resp.status + '）'); });
+      var biz = await readJson(resp).catch(function (e) { throw new Error(e.message || '接口响应异常'); });
       if (biz.code !== 0) { throw new Error(biz.message || '推送失败'); }
       var isBrowser = (testChannel && testChannel.pushType === 1);
       toast(isBrowser ? '推送成功' : '推送成功, 可到官网查看推送日志', 'ok', 6000);
