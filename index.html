@@ -7,32 +7,33 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>push-server 通道管理 · 一封传话</title>
-<link rel="stylesheet" href="assets/style.css?v=1">
+<link rel="stylesheet" href="assets/style.css?v=4">
 </head>
 <body>
 
 <!-- GitHub Corner（复刻 danmu.phprm.com 右上角折角图标，hover 挥手） -->
-<a href="https://github.com/teakong/push-server" target="_blank" class="github-corner" aria-label="View source on GitHub" title="View source on GitHub"><svg width="70" height="70" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 9999;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"/><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"/><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"/></svg></a>
+<a href="https://github.com/teakong/push-server" target="_blank" rel="noopener" class="github-corner" aria-label="View source on GitHub" title="View source on GitHub"><svg width="70" height="70" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"/><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"/><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"/></svg></a>
 
 <header class="topbar">
   <div class="wrap">
-    <a href="/push-server-frontend"><span class="brand">push-server<span class="sub">一封传话 · 通道管理与推送测试</span></span></a>
+    <a href="/push-server-frontend"><span class="brand">push-server<span class="sub" data-i18n="brand_sub"></span></span></a>
     <span style="flex:1"></span>
     <span class="agent-guide-pill">
       <svg class="agent-guide-pill-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
       <a class="agent-guide-pill-link" href="https://push.phprm.com/skill.md" target="_blank" rel="noopener">
-        <span class="agent-guide-pill-label">Agent 指南：</span>
+        <span class="agent-guide-pill-label" data-i18n="agent_guide_label"></span>
         <span class="agent-guide-pill-url">https://push.phprm.com/skill.md</span>
       </a>
-      <button type="button" class="agent-guide-pill-btn" id="agentGuideCopy" title="复制 skill.md 地址" aria-label="复制 skill.md 地址">
+      <button type="button" class="agent-guide-pill-btn" id="agentGuideCopy" data-i18n-title="agent_guide_copy" title="复制 skill.md 地址" aria-label="复制 skill.md 地址">
         <svg class="agent-guide-copy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         <svg class="agent-guide-check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
       </button>
-      <a class="agent-guide-pill-btn" href="https://push.phprm.com/skill.md" target="_blank" rel="noopener" title="打开 skill.md" aria-label="打开 skill.md">
+      <a class="agent-guide-pill-btn" href="https://push.phprm.com/skill.md" target="_blank" rel="noopener" data-i18n-title="agent_guide_open" title="打开 skill.md" aria-label="打开 skill.md">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
       </a>
     </span>
-    <button class="keybtn" id="codeBtn" type="button">设置通道码</button>
+    <button class="keybtn" id="langBtn" type="button">EN</button>
+    <button class="keybtn" id="codeBtn" type="button" data-i18n="btn_set_code"></button>
   </div>
 </header>
 
@@ -40,7 +41,7 @@
 
   <!-- ============ 推送测试卡片（未设置通道码 = 群组提醒示例；已设置 = 当前通道码） ============ -->
   <section class="card" id="pushCard">
-    <h2 id="pushCardTitle">群组提醒示例</h2>
+    <h2 id="pushCardTitle" data-i18n="push_title_demo"></h2>
 
     <div id="demoChannelBox" class="demo-channel" style="display:none">
       <img id="demoQr" class="qr" alt="手机接收二维码" src="">
@@ -51,7 +52,7 @@
         </div>
         <div class="mono" id="demoCodeMasked"></div>
         <div class="links">
-          <a id="demoPushUrl" href="#" target="_blank" rel="noopener">查看推送记录页</a>
+          <a id="demoPushUrl" href="#" target="_blank" rel="noopener" data-i18n="demo_push_records"></a>
           <span id="demoTip" class="muted"></span>
         </div>
       </div>
@@ -59,19 +60,24 @@
 
     <div class="push-form">
       <div class="form-row">
-        <label for="pushHead">标题</label>
-        <input id="pushHead" type="text" maxlength="200" value="测试" placeholder="消息标题，200 字以内">
+        <label for="pushHead" data-i18n="label_head"></label>
+        <input id="pushHead" type="text" maxlength="200" data-i18n-value="default_head" data-i18n-ph="ph_head">
       </div>
       <div class="form-row">
-        <label for="pushBody">推送内容</label>
-        <textarea id="pushBody" rows="3" placeholder="请输入要推送的内容（Markdown），选填"></textarea>
+        <label for="pushBody" data-i18n="label_body"></label>
+        <textarea id="pushBody" rows="3" data-i18n-ph="ph_body"></textarea>
       </div>
       <div class="form-row">
-        <label for="pushUrl">跳转网址</label>
-        <input id="pushUrl" type="text" placeholder="跳转链接，选填，如 https://example.com/pr/123">
+        <label for="pushUrl" data-i18n="label_url"></label>
+        <input id="pushUrl" type="text" data-i18n-ph="ph_url">
+      </div>
+      <div class="form-row">
+        <label for="pushAvatar" data-i18n="label_avatar"></label>
+        <input id="pushAvatar" type="text" data-i18n-ph="ph_avatar">
       </div>
       <div class="form-row actions">
-        <button class="btn btn-primary" id="sendBtn" type="button">发送测试</button>
+        <label></label>
+        <button class="btn btn-primary" id="sendBtn" type="button" data-i18n="btn_send"></button>
         <span class="muted" id="sendTargetTip"></span>
       </div>
     </div>
@@ -82,42 +88,57 @@
   <!-- ============ 通道管理卡片 ============ -->
   <section class="card" id="channelCard">
     <div class="card-head">
-      <h2>通道管理<span class="hint" id="channelParentInfo"></span></h2>
+      <h2><span data-i18n="chan_title"></span><span class="hint" id="channelParentInfo"></span></h2>
       <span class="card-head-btns">
-        <button class="btn btn-ghost" id="refreshBtn" type="button">刷新</button>
-        <button class="btn btn-primary" id="addBtn" type="button">+ 新增推送通道</button>
+        <button class="btn btn-ghost" id="refreshBtn" type="button" data-i18n="btn_refresh"></button>
+        <button class="btn btn-primary" id="addBtn" type="button" data-i18n="btn_add"></button>
       </span>
     </div>
 
     <div id="channelTableWrap">
       <div class="placeholder" id="channelPlaceholder">
-        <p>设置通道码后即可在这里管理你的推送通道（新增 / 修改 / 删除 / 测试 / 复制通道码）。</p>
-        <p class="muted">还没有通道码？去官网 <a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">push.phprm.com/mcp.html</a> 注册创建，然后在右上角「设置通道码」填入 32 位通道码。</p>
+        <p data-i18n="placeholder_no_code"></p>
+        <p class="muted" data-i18n-html="placeholder_no_code_hint"></p>
       </div>
     </div>
   </section>
 
-  <footer class="foot muted">
-    纯 HTML + JavaScript 实现，无任何服务端代码；通道码仅保存在本浏览器 LocalStorage。
-    接口由 <a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">一封传话官网</a> 提供。
-  </footer>
+  <!-- ============ 分享：把本页网址发给正在使用 SKILL 的好友 ============ -->
+  <section class="card" id="shareCard">
+    <div class="card-head">
+      <h2 data-i18n-html="share_title"></h2>
+    </div>
+    <p data-i18n-html="share_p1"></p>
+    <p data-i18n-html="share_p2"></p>
+    <div class="share-linkbox">
+      <input id="sharePageUrl" type="text" readonly>
+      <button class="btn btn-primary" id="copyPageUrlBtn" type="button" data-i18n-title="btn_copy_link">
+        <svg class="share-btn-icon share-btn-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        <svg class="share-btn-icon share-btn-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span data-i18n="btn_copy_link"></span>
+      </button>
+    </div>
+    <p class="muted small" data-i18n="share_note"></p>
+  </section>
+
+  <footer class="foot muted" data-i18n-html="foot"></footer>
 </main>
 
 <!-- ============ 设置通道码弹窗 ============ -->
 <div class="modal-mask" id="settingsModal" style="display:none">
   <div class="modal">
     <button class="modal-close" type="button" data-close="settingsModal" title="关闭" aria-label="关闭">×</button>
-    <h3>设置通道码</h3>
-    <p class="muted">通道码（PHPRM_CHANNEL_CODE）是 32 位推送凭证，在官网控制台创建通道后获得。</p>
-    <input id="codeInput" type="text" placeholder="粘贴 32 位通道码，如 4d05f4abdb0a0c2a0269900809946903" autocomplete="off" spellcheck="false">
-    <p class="muted small">还没有通道码？去官网 <a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">push.phprm.com/mcp.html</a> 注册创建。</p>
+    <h3 data-i18n="set_code_title"></h3>
+    <p class="muted" data-i18n="set_code_desc"></p>
+    <input id="codeInput" type="text" autocomplete="off" spellcheck="false" data-i18n-ph="code_ph">
+    <p class="muted small" data-i18n-html="set_code_hint"></p>
     <p class="err small" id="codeErr" style="display:none"></p>
     <p class="err small" id="codeChangedTip" style="display:none"></p>
     <div class="modal-btns">
-      <button class="btn btn-ghost" id="clearCodeBtn" type="button">清除</button>
+      <button class="btn btn-ghost" id="clearCodeBtn" type="button" data-i18n="btn_clear"></button>
       <span style="flex:1"></span>
-      <button class="btn btn-ghost" data-close="settingsModal" type="button">取消</button>
-      <button class="btn btn-primary" id="saveCodeBtn" type="button">保存</button>
+      <button class="btn btn-ghost" data-close="settingsModal" type="button" data-i18n="btn_cancel"></button>
+      <button class="btn btn-primary" id="saveCodeBtn" type="button" data-i18n="btn_save"></button>
     </div>
   </div>
 </div>
@@ -126,40 +147,40 @@
 <div class="modal-mask" id="addModal" style="display:none">
   <div class="modal">
     <button class="modal-close" type="button" data-close="addModal" title="关闭" aria-label="关闭">×</button>
-    <h3>新增推送通道</h3>
+    <h3 data-i18n="add_title"></h3>
     <div class="form-row">
-      <label>通道名称</label>
-      <input id="addName" type="text" maxlength="50" placeholder="如：告警接收端">
+      <label data-i18n="field_name"></label>
+      <input id="addName" type="text" maxlength="50" data-i18n-ph="ph_channel_name">
     </div>
     <div class="form-row">
-      <label>推送类型</label>
+      <label data-i18n="field_type"></label>
       <select id="addType"></select>
     </div>
     <div class="form-row" id="addWebhookRow" style="display:none">
-      <label>接收地址</label>
+      <label data-i18n="field_webhook"></label>
       <input id="addWebhook" type="text" placeholder="https://example.com/hook/push">
     </div>
     <div class="form-row" id="addSecretRow" style="display:none">
-      <label>加签 Secret</label>
-      <input id="addSecret" type="text" placeholder="群机器人启用加签时才填，选填">
+      <label data-i18n="field_secret"></label>
+      <input id="addSecret" type="text" data-i18n-ph="ph_secret">
     </div>
     <div class="form-row" id="addCorpIdRow" style="display:none">
-      <label id="addCorpLabel">发信人昵称</label>
-      <input id="addCorpId" type="text" placeholder="对应参数 corpId" autocomplete="off">
+      <label id="addCorpLabel"></label>
+      <input id="addCorpId" type="text" autocomplete="off" placeholder="对应参数 corpId">
     </div>
     <div class="form-row" id="addAgentIdRow" style="display:none">
-      <label id="addAgentLabel">邮箱地址</label>
-      <input id="addAgentId" type="text" placeholder="对应参数 agentId" autocomplete="off">
+      <label id="addAgentLabel"></label>
+      <input id="addAgentId" type="text" autocomplete="off" placeholder="对应参数 agentId">
     </div>
     <div class="form-row" id="addCorpSecretRow" style="display:none">
-      <label id="addSecretLabel">授权码</label>
-      <input id="addCorpSecret" type="text" placeholder="对应参数 corpSecret（邮箱服务商生成的授权码）" autocomplete="off">
+      <label id="addSecretLabel"></label>
+      <input id="addCorpSecret" type="text" autocomplete="off" placeholder="对应参数 corpSecret">
     </div>
     <p class="err small" id="addErr" style="display:none"></p>
-    <p class="muted small">提示：使用父通道码推送将自动推送到所有子通道。</p>
+    <p class="muted small" data-i18n="add_tip"></p>
     <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="addModal" type="button">取消</button>
-      <button class="btn btn-primary" id="addSubmit" type="button">创建</button>
+      <button class="btn btn-ghost" data-close="addModal" type="button" data-i18n="btn_cancel"></button>
+      <button class="btn btn-primary" id="addSubmit" type="button" data-i18n="btn_create"></button>
     </div>
   </div>
 </div>
@@ -168,43 +189,43 @@
 <div class="modal-mask" id="editModal" style="display:none">
   <div class="modal">
     <button class="modal-close" type="button" data-close="editModal" title="关闭" aria-label="关闭">×</button>
-    <h3>修改通道</h3>
+    <h3 data-i18n="edit_title"></h3>
     <p class="muted small" id="editTarget"></p>
     <div class="form-row">
-      <label>通道名称</label>
+      <label data-i18n="field_name"></label>
       <input id="editName" type="text" maxlength="50">
     </div>
     <div class="form-row" id="editWebhookRow" style="display:none">
-      <label>接收地址</label>
+      <label data-i18n="field_webhook"></label>
       <input id="editWebhook" type="text">
     </div>
     <div class="form-row" id="editCorpIdRow" style="display:none">
-      <label id="editCorpLabel">发信人昵称</label>
-      <input id="editCorpId" type="text" placeholder="对应参数 corpId" autocomplete="off">
+      <label id="editCorpLabel"></label>
+      <input id="editCorpId" type="text" autocomplete="off" placeholder="对应参数 corpId">
     </div>
     <div class="form-row" id="editAgentIdRow" style="display:none">
-      <label id="editAgentLabel">邮箱地址</label>
-      <input id="editAgentId" type="text" placeholder="对应参数 agentId" autocomplete="off">
+      <label id="editAgentLabel"></label>
+      <input id="editAgentId" type="text" autocomplete="off" placeholder="对应参数 agentId">
     </div>
     <div class="form-row" id="editCorpSecretRow" style="display:none">
-      <label id="editSecretLabel">授权码</label>
-      <input id="editCorpSecret" type="text" placeholder="对应参数 corpSecret（邮箱服务商生成的授权码）" autocomplete="off">
+      <label id="editSecretLabel"></label>
+      <input id="editCorpSecret" type="text" autocomplete="off" placeholder="对应参数 corpSecret">
     </div>
     <div class="form-row" id="editSignSecretRow" style="display:none">
-      <label>加签 Secret</label>
-      <input id="editSignSecret" type="text" placeholder="对应参数 signSecret" autocomplete="off">
+      <label data-i18n="field_secret"></label>
+      <input id="editSignSecret" type="text" autocomplete="off" placeholder="对应参数 signSecret">
     </div>
     <div class="form-row">
-      <label>状态</label>
+      <label data-i18n="field_status"></label>
       <select id="editStatus">
-        <option value="1">启用（正常接收推送）</option>
-        <option value="0">停用（推送将返回「通道未开启」）</option>
+        <option value="1" data-i18n="status_on"></option>
+        <option value="0" data-i18n="status_off"></option>
       </select>
     </div>
     <p class="err small" id="editErr" style="display:none"></p>
     <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="editModal" type="button">取消</button>
-      <button class="btn btn-primary" id="editSubmit" type="button">保存</button>
+      <button class="btn btn-ghost" data-close="editModal" type="button" data-i18n="btn_cancel"></button>
+      <button class="btn btn-primary" id="editSubmit" type="button" data-i18n="btn_save"></button>
     </div>
   </div>
 </div>
@@ -213,11 +234,11 @@
 <div class="modal-mask" id="qrModal" style="display:none">
   <div class="modal qr-modal">
     <button class="modal-close" type="button" data-close="qrModal" title="关闭" aria-label="关闭">×</button>
-    <h3 id="qrTitle">使用手机扫码访问</h3>
+    <h3 id="qrTitle" data-i18n="qr_title"></h3>
     <div class="qr-big-wrap">
       <img id="qrBig" class="qr-big" alt="放大的二维码" src="">
     </div>
-    <p class="muted small" style="text-align:center; font-size: 15px"><a id="groupUrl" href="" target="_blank">点这里可以打开该通道的推送记录页</a></p>
+    <p class="muted small" style="text-align:center"><a id="groupUrl" href="" target="_blank" data-i18n="push_records"></a></p>
   </div>
 </div>
 
@@ -231,32 +252,32 @@
     <div class="modal-body-pad">
       <div class="trow">
         <label class="tkey">head</label>
-        <input id="testHead" type="text" value="测试" placeholder="消息标题">
+        <input id="testHead" type="text" data-i18n-value="default_head" data-i18n-ph="ph_head">
       </div>
       <div class="trow">
         <label class="tkey">body</label>
-        <input id="testBody" type="text" placeholder="推送内容，选填">
+        <input id="testBody" type="text" data-i18n-ph="ph_body">
       </div>
       <div class="trow">
         <label class="tkey">url</label>
-        <input id="testUrl" type="text" placeholder="跳转网址，选填">
+        <input id="testUrl" type="text" data-i18n-ph="ph_url">
       </div>
       <div class="trow">
         <label class="tkey">avatar</label>
-        <input id="testAvatar" type="text" placeholder="指定发布人头像网址，选填">
+        <input id="testAvatar" type="text" data-i18n-ph="ph_avatar">
       </div>
       <div class="trow">
-        <label class="tkey">API网址</label>
+        <label class="tkey" data-i18n="trow_api"></label>
         <div class="tval">
-          <div><a href="javascript:;" id="testCopyUrl">复制网址</a>&nbsp;集成到您的代码中即可</div>
+          <div><a href="javascript:;" id="testCopyUrl" data-i18n="copy_api"></a>&nbsp;<span data-i18n="api_tip"></span></div>
           <div class="api-url mono" id="testApiUrl"></div>
         </div>
       </div>
       <div class="trow actions">
         <label class="tkey"></label>
         <div class="tval">
-          <button class="btn btn-primary" id="testPushBtn" type="button">推送</button>
-          <button class="btn btn-cancel" data-close="testModal" type="button">取消</button>
+          <button class="btn btn-primary" id="testPushBtn" type="button" data-i18n="btn_push"></button>
+          <button class="btn btn-cancel" data-close="testModal" type="button" data-i18n="btn_cancel"></button>
         </div>
       </div>
     </div>
@@ -267,12 +288,12 @@
 <div class="modal-mask" id="delModal" style="display:none">
   <div class="modal">
     <button class="modal-close" type="button" data-close="delModal" title="关闭" aria-label="关闭">×</button>
-    <h3>删除通道</h3>
-    <p id="delTip">确认删除该通道？删除不可恢复，同组成员与历史消息一并失效。</p>
+    <h3 data-i18n="del_title"></h3>
+    <p id="delTip" data-i18n="del_tip"></p>
     <p class="muted small" id="delTarget"></p>
     <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="delModal" type="button">取消</button>
-      <button class="btn btn-danger" id="delSubmit" type="button">确认删除</button>
+      <button class="btn btn-ghost" data-close="delModal" type="button" data-i18n="btn_cancel"></button>
+      <button class="btn btn-danger" id="delSubmit" type="button" data-i18n="btn_confirm_del"></button>
     </div>
   </div>
 </div>
@@ -281,18 +302,20 @@
 <div class="modal-mask" id="resetModal" style="display:none">
   <div class="modal">
     <button class="modal-close" type="button" data-close="resetModal" title="关闭" aria-label="关闭">×</button>
-    <h3>重置通道码</h3>
-    <p id="resetTip">确认重置该通道的通道码？重置后旧通道码将失效。</p>
+    <h3 data-i18n="reset_title"></h3>
+    <p id="resetTip" data-i18n="reset_tip"></p>
     <p class="muted small" id="resetTarget"></p>
     <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="resetModal" type="button">取消</button>
-      <button class="btn btn-danger" id="resetSubmit" type="button">确认重置</button>
+      <button class="btn btn-ghost" data-close="resetModal" type="button" data-i18n="btn_cancel"></button>
+      <button class="btn btn-danger" id="resetSubmit" type="button" data-i18n="btn_confirm_reset"></button>
     </div>
   </div>
 </div>
 
 <div id="toasts"></div>
 
-<script src="assets/app.js?v=3"></script>
+<!-- 群聊（浏览器类型通道）依赖：danmu.js 提供 WebsitePusher -->
+<script src="//ws.phprm.com/static/customer/js/danmu.js?hidePanel=1"></script>
+<script src="assets/app.js?v=6"></script>
 </body>
 </html>
