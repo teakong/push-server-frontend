@@ -218,7 +218,7 @@ code {
 .btn-o-blue:hover  { background: var(--brand-bg); }
 .btn-sm { padding: 4px 11px; font-size: 14px; border-radius: 4px; }
 /* 通道名右侧的「群聊」按钮（仅浏览器类型通道） */
-.btn-chat { margin-left: 6px; vertical-align: middle; }
+.btn-chat { margin-left: 6px; vertical-align: middle; font-size: 12px; }
 
 /* ---------- 通道表格 ---------- */
 .table-wrap { overflow-x: auto; }
