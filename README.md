@@ -31,7 +31,7 @@ http://localhost/push-server-frontend/
 - 右上角设置 32 位通道码（`PHPRM_CHANNEL_CODE`，仅存浏览器 LocalStorage），标题变为「当前MCP配置的通道码」
 - 自动加载 `GET /oauth2/push/channel/list`（无分页），按 `pushType=10`（组合）标记「父通道」，其余行连续编号「子1、子2…」
 - 支持增删改：
-  - **新增** `/channel/add`：18 种推送类型；webhook/群机器人按类型显示接收地址与加签 Secret；自定义邮箱（51~58）显示 发信人昵称(corpId)/邮箱地址(agentId)/授权码(corpSecret)；企业微信应用(9)显示 企业ID/应用ID/应用Secret
+  - **新增** `/channel/add`：18 种推送类型；通道名称按所选类型自动预填（可改，手改后不再覆盖）；webhook/群机器人按类型显示接收地址与加签（钉钉=Webhook、飞书=webhook地址+签名验证、企业微信群机器人=Webhook地址，并给出各家官方 webhook 前缀作示例）；自定义邮箱（51~58）显示 发信人昵称(corpId)/邮箱地址(agentId)/授权码(corpSecret)；企业微信应用(9)显示 企业ID/应用ID/应用Secret
   - **修改** `/channel/edit`：改名、改配置、启用/停用（status 0/1）
   - **删除** `/channel/deleteChannel`：二次确认，当前绑定通道服务端会拒绝
 - 二维码点击放大浮层；「复制」按钮复制完整通道码

@@ -79,6 +79,36 @@
       btn_copy_link: '复制当前链接',
       copied_link: '已复制当前链接',
       share_note: '注意：通道码等同于推送凭证，请只发送给可信任的人；被分享者只能管理该组合通道内的子通道，不能进入你的账号。',
+
+      /* —— 工具速览：这段内容同时给人看、也给好友的 Agent 看 —— */
+      share_what_h3: '这个工具是什么',
+      share_what_p: '一封传话（push-server）是一站式聚合消息推送平台：一个 API 同时推送到微信公众号、企业微信、钉钉、飞书、邮件和自定义 Webhook，支持 Markdown、定时推送与网站弹幕接入。官网 <a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">push.phprm.com</a>，给 Agent 读的说明书是 <a href="https://push.phprm.com/skill.md" target="_blank" rel="noopener">skill.md</a>。',
+      share_cap_types: '<strong>18 种推送类型</strong>：浏览器、企业微信群机器人、钉钉群机器人、飞书群机器人、webhook 推送、BARK（iOS）、Telegram、Discord、官方邮件，以及 QQ / 163 / 126 / 搜狐 / 139 / 189 / 新浪 / 阿里云自定义邮箱。',
+      share_cap_combo: '<strong>通道码是 32 位十六进制串</strong>。组合通道（pushType=10）当父通道：推父码＝组内所有子通道都能收到，推子码＝只到那一个子通道。本页管理的就是这个组合通道下的子通道。',
+      share_cap_two_ways: '<strong>两条调用路径</strong>：MCP（给 AI 客户端，多 3 个工具）和免鉴权 HTTP 推送接口（给自己的脚本、CI、监控告警用）。',
+      share_mcp_h3: '接入 AI 客户端：MCP 配置三要素',
+      share_mcp_url: '<strong>服务地址</strong>：<code>https://www.phprm.com/services/push/mcp</code>，远程端点不需要本地装任何依赖。',
+      share_mcp_header: '<strong>鉴权 Header</strong>：<code>X-Push-Channel-Code</code> 填 32 位通道码；可选 <code>X-Mcp-Source</code> 标注是哪个客户端。',
+      share_mcp_code: '<strong>通道码</strong>：就是上面分享链接里 <code>channelCode</code> 的值，直接替换配置示例里的 <code>******</code>。',
+      share_tools_h3: '配好后 Agent 多出的 3 个工具',
+      share_tool_send: '<code>send_push_message</code>：推单条。<code>head</code> 必填且 ≤200 字，<code>body</code> 支持 Markdown ≤50000 字，<code>url</code> 是点击跳转 ≤500 字，<code>channelCode</code> 不填就用 Header 里那个。',
+      share_tool_multi: '<code>send_multi_message</code>：一次 1~32 条，每条可以带自己的 <code>channelCode</code>。批量采集、跨通道、或用户明确要求分成多条推时才用。',
+      share_tool_token: '<code>get_access_token</code>：拿通道码换短期 Bearer 令牌（默认 7200 秒，<code>scope</code> 默认 basic），供 <code>/oauth2/push/*</code> 管理接口用——本页的新增 / 修改 / 删除 / 重置通道码全走这条路。',
+      share_http_h3: '不想装 MCP？直接发 HTTP 也能推',
+      share_http_p: 'GET 推送接口匿名可用，<code>head / body / url / avatar</code> 全走 query 参数，再加 <code>delayMilliseconds</code> 就能定时推送（最长 10 天）。',
+      share_get_sample_body: '本周进度：MCP 通道已打通，管理页面上线',
+      share_prompt_h3: '复制给好友，让他直接粘给自己的 Agent',
+      share_prompt_p: '好友装好 push-server SKILL 之后，把下面这段发给他自己的 Agent 就能干活（已经带上本页分享的通道码）：',
+      share_prompt_sample: '我给你一个 32 位通道码 {code}：先把它写进我 push-server MCP 配置的 X-Push-Channel-Code Header，然后列出这个组合通道下的所有子通道，最后往浏览器通道推一条标题为「联调测试」的消息。',
+      share_copy_cfg: '复制配置',
+      share_copy_url: '复制网址',
+      share_copy_prompt: '复制口令',
+      copied_sample: '已复制到剪贴板',
+      share_pit_summary: '容易踩的坑（排障时给 Agent 看）',
+      share_pit_load: 'MCP 端点匿名就能连上、3 个工具也照样列得出来，这不代表凭证生效——通道码写错时工具列表正常，要到真正推送才报错。',
+      share_pit_bearer: '通道码不等于 Bearer 令牌：<code>/oauth2/push/*</code> 只认 <code>Authorization: Bearer</code>（由 <code>get_access_token</code> 换取），而换到的令牌不能拿去走匿名推送。',
+      share_pit_form: '<code>/oauth2/push/*</code> 只接受 query / form 参数，JSON body 会被忽略；而且业务失败也返回 HTTP 200，得判响应里的 <code>code</code> 是不是 0。',
+      share_pit_ping: '连通性自检：<code>GET https://www.phprm.com/services/public/ping</code>，返回存活状态和一个公开示例通道（那个示例通道码人人可用，别当成自己的默认通道）。',
       foot: '纯 HTML + JavaScript 实现，无任何服务端代码；通道码仅保存在本浏览器 LocalStorage。接口由 <a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">一封传话官网</a> 提供。',
 
       set_code_title: '设置通道码',
@@ -99,10 +129,15 @@
       field_name: '通道名称',
       field_type: '推送类型',
       field_webhook: '接收地址',
-      field_secret: '加签 Secret',
+      field_secret: '加签',
       field_status: '状态',
       ph_channel_name: '如：告警接收端',
       ph_secret: '群机器人启用加签时才填，选填',
+      /* 群机器人的接收地址/加签沿用各家官方控制台的叫法 */
+      wh_6: 'Webhook地址',
+      wh_7: 'Webhook',
+      wh_8: 'webhook地址',
+      sec_8: '签名验证',
       status_on: '启用（正常接收推送）',
       status_off: '停用（推送将返回「通道未开启」）',
       add_tip: '提示：使用父通道码推送将自动推送到所有子通道。',
@@ -249,6 +284,35 @@
       btn_copy_link: 'Copy current link',
       copied_link: 'Current link copied',
       share_note: 'Note: the channel code is a push credential. Only share it with trusted people. Recipients can only manage sub channels inside this combo channel, not access your account.',
+
+      share_what_h3: 'What this tool is',
+      share_what_p: 'OnePass (push-server) is an aggregated message-push platform: one API pushes to WeChat Official Account, WeCom, DingTalk, Feishu, email and custom webhooks, with Markdown, scheduled delivery and on-site bullet comments. Site: <a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">push.phprm.com</a>; the manual written for agents: <a href="https://push.phprm.com/skill.md" target="_blank" rel="noopener">skill.md</a>.',
+      share_cap_types: '<strong>18 push types</strong>: browser, WeCom group bot, DingTalk group bot, Feishu group bot, webhook push, BARK (iOS), Telegram, Discord, official email, plus custom mailboxes (QQ / 163 / 126 / Sohu / 139 / 189 / Sina / Aliyun).',
+      share_cap_combo: '<strong>A channel code is a 32-char hex string.</strong> A combo channel (pushType=10) acts as the parent: push to the parent code and every sub channel receives it; push to a sub code and only that one does. This page manages the sub channels of this combo channel.',
+      share_cap_two_ways: '<strong>Two ways in</strong>: MCP (for AI clients, adds 3 tools) and the anonymous HTTP push endpoint (for your own scripts, CI and monitoring alerts).',
+      share_mcp_h3: 'Wiring it into an AI client: the three MCP pieces',
+      share_mcp_url: '<strong>Server URL</strong>: <code>https://www.phprm.com/services/push/mcp</code>. It is remote — nothing to install locally.',
+      share_mcp_header: '<strong>Auth header</strong>: <code>X-Push-Channel-Code</code> carries the 32-char channel code; optional <code>X-Mcp-Source</code> labels the client.',
+      share_mcp_code: '<strong>Channel code</strong>: exactly the <code>channelCode</code> value in the link above — replace <code>******</code> in the sample with it.',
+      share_tools_h3: 'The 3 tools your agent gains',
+      share_tool_send: '<code>send_push_message</code>: one message. <code>head</code> required, ≤200 chars; <code>body</code> Markdown ≤50000 chars; <code>url</code> click-through ≤500 chars; <code>channelCode</code> falls back to the header value.',
+      share_tool_multi: '<code>send_multi_message</code>: 1~32 messages at once, each may carry its own <code>channelCode</code>. Use it for batch collection, cross-channel delivery, or when the user asks for separate messages.',
+      share_tool_token: '<code>get_access_token</code>: exchanges the channel code for a short-lived Bearer token (7200s default, <code>scope</code> defaults to basic) for the <code>/oauth2/push/*</code> management API — everything this page does (add / edit / delete / reset code) goes through it.',
+      share_http_h3: 'No MCP? Plain HTTP pushes too',
+      share_http_p: 'The GET push endpoint is anonymous: <code>head / body / url / avatar</code> all go in the query string, and <code>delayMilliseconds</code> schedules the push (up to 10 days).',
+      share_get_sample_body: 'Weekly progress: MCP channel connected, admin page live',
+      share_prompt_h3: 'Copy this and paste it to your friend\'s agent',
+      share_prompt_p: 'Once your friend has the push-server SKILL installed, sending the block below to their own agent is enough (it already carries the shared channel code):',
+      share_prompt_sample: 'Here is my 32-char channel code {code}: write it into the X-Push-Channel-Code header of my push-server MCP config, then list every sub channel under this combo channel, and finally push one message to the browser channel titled "integration test".',
+      share_copy_cfg: 'Copy config',
+      share_copy_url: 'Copy URL',
+      share_copy_prompt: 'Copy prompt',
+      copied_sample: 'Copied to clipboard',
+      share_pit_summary: 'Known pitfalls (show this to the agent when debugging)',
+      share_pit_load: 'The MCP endpoint connects anonymously and lists all 3 tools regardless — that does not mean the credential works. With a wrong channel code the tool list still loads and only the actual push fails.',
+      share_pit_bearer: 'A channel code is not a Bearer token: <code>/oauth2/push/*</code> only accepts <code>Authorization: Bearer</code> (from <code>get_access_token</code>), and that token cannot be used for the anonymous push endpoint.',
+      share_pit_form: '<code>/oauth2/push/*</code> only reads query / form parameters — a JSON body is ignored; and business failures still return HTTP 200, so check whether <code>code</code> equals 0.',
+      share_pit_ping: 'Health check: <code>GET https://www.phprm.com/services/public/ping</code> returns liveness plus one public demo channel (that demo code is shared by everyone — never treat it as your default channel).',
       foot: 'Pure HTML + JavaScript, no server-side code; the channel code lives in this browser LocalStorage only. APIs are provided by <a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">OnePass</a>.',
 
       set_code_title: 'Set Channel Code',
@@ -273,6 +337,10 @@
       field_status: 'Status',
       ph_channel_name: 'e.g. Alert receiver',
       ph_secret: 'Only when the group bot enables signing, optional',
+      wh_6: 'Webhook URL',
+      wh_7: 'Webhook URL',
+      wh_8: 'Webhook URL',
+      sec_8: 'Signature',
       status_on: 'Enabled (receives pushes)',
       status_off: 'Disabled (pushes return "channel not enabled")',
       add_tip: 'Tip: pushing with a parent channel code delivers to every sub channel.',
@@ -397,6 +465,14 @@
   /* 需 corpId/agentId/corpSecret 三件套的类型：
      9=企业微信应用（企业ID/应用ID/应用Secret）；51~58=自定义邮箱（发信人昵称/邮箱地址/授权码）；50 官方邮件不需要 */
   var NEED_EMAIL = { 9: 1, 51: 1, 52: 1, 53: 1, 54: 1, 55: 1, 56: 1, 57: 1, 58: 1 };
+
+  /* 群机器人官方 Webhook 前缀，用作接收地址输入框示例 */
+  var WEBHOOK_PH = {
+    6: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send',
+    7: 'https://oapi.dingtalk.com/robot/',
+    8: 'https://open.feishu.cn/open-apis/bot/v2'
+  };
+  var WEBHOOK_PH_DEFAULT = 'https://example.com/hook/push';
 
   function threeLabels(type) {
     return type === 9 ? t('three_9') : t('three_email');
@@ -577,6 +653,10 @@
     if (off) { off.textContent = t('status_off'); }
     /* 切换语言会把 data-i18n-ph 的占位符重置，这里把 ping 示例通道码补回设置弹窗 */
     updateCodePlaceholder();
+    /* 群机器人字段文案由 JS 覆盖，语言切换后按当前类型重刷 */
+    setRobotLabels(editTarget ? Number(editTarget.pushType) : Number(el('addType').value) || 0);
+    refreshAutoChannelName();
+    updateShareSamples();
   }
 
   function toggleLang() {
@@ -747,6 +827,30 @@
   function updateShareBox() {
     var box = el('sharePageUrl');
     if (box) { box.value = buildShareUrl(); }
+    updateShareSamples();
+  }
+
+  /** 被分享的通道码：与 buildShareUrl 同口径，取不到就留 ****** 占位 */
+  function shareCode() {
+    var m = /[?&]channelCode=([^&#]*)/.exec(buildShareUrl());
+    return m ? decodeURIComponent(m[1]) : '******';
+  }
+
+  /** 分享区三段可复制内容：MCP 配置片段、匿名 GET 推送网址、发给对方 Agent 的口令 */
+  function updateShareSamples() {
+    var code = shareCode();
+    el('shareMcpSample').textContent = JSON.stringify({
+      mcpServers: {
+        'push-server': {
+          url: MCP_URL,
+          headers: { 'X-Push-Channel-Code': code }
+        }
+      }
+    }, null, 2);
+    el('shareGetSample').textContent = API + '/services/push/send/' + code +
+      '?head=' + encodeURIComponent(t('default_head')) +
+      '&body=' + encodeURIComponent(t('share_get_sample_body'));
+    el('sharePromptSample').textContent = tpl('share_prompt_sample', { code: code });
   }
 
   function bindShareBox() {
@@ -757,6 +861,12 @@
       copyText(el('sharePageUrl').value || buildShareUrl(), t('copied_link'));
       b.classList.add('is-copied');
       setTimeout(function () { b.classList.remove('is-copied'); }, 1500);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#shareCard [data-copy-from]'), function (b) {
+      b.addEventListener('click', function () {
+        var src = el(b.getAttribute('data-copy-from'));
+        if (src) { copyText(src.textContent, t('copied_sample')); }
+      });
     });
   }
 
@@ -945,7 +1055,7 @@
       var idxText = isParent ? t('idx_parent') : (r.pushTypeDesc || (t('idx_sub') + (r._subIdx || i)));
       var idxCls = 'idx' + (isParent ? ' idx-parent' : ' idx-type');
       var qr = r.qrCodeUrl
-        ? '<img class="qr" src="' + esc(r.qrCodeUrl) + '" alt="QR" title="点击放大" data-qr="' + esc(r.qrCodeUrl) + '" data-url="' + esc(r.pushUrl) + '" data-name="' + esc(r.channelName || '') + '">'
+        ? '<img class="qr" src="' + esc(r.qrCodeUrl) + '" alt="QR" title="点击放大" data-qr="' + esc(r.qrCodeUrl) + '" data-i="' + i + '" data-name="' + esc(r.channelName || '') + '">'
         : '<span class="muted">—</span>';
       var nameBadge = (isCur ? '<span class="badge-cur">' + esc(t('badge_cur')) + '</span>' : '') +
         (Number(r.status) === 0 ? '<span class="badge-off">' + esc(t('badge_off')) + '</span>' : '');
@@ -977,13 +1087,16 @@
     renderPushCard();
   }
 
+  /* 二维码浮层当前对应的通道：浮层里的「推送记录」按钮复用表格里的同名按钮逻辑 */
+  var qrChannel = null;
+
   el('channelTableWrap').addEventListener('click', function (ev) {
     /* 二维码缩略图 → 打开放大浮层 */
     var qrImg = ev.target.closest ? ev.target.closest('img.qr[data-qr]') : null;
     if (qrImg) {
+      qrChannel = channelRows[Number(qrImg.getAttribute('data-i'))] || null;
       el('qrTitle').textContent = t('qr_title') + '：' + (qrImg.getAttribute('data-name') || '');
       el('qrBig').src = qrImg.getAttribute('data-qr');
-      el('groupUrl').href = qrImg.getAttribute('data-url');
       openModal('qrModal');
       return;
     }
@@ -1074,6 +1187,19 @@
 
   var testChannel = null; /* 当前测试目标通道 */
 
+  /** 群机器人（6/7/8）的接收地址与加签按各家官方叫法切换标签文案和示例地址 */
+  function setRobotLabels(type) {
+    var hookLabel = WEBHOOK_PH[type] ? t('wh_' + type) : t('field_webhook');
+    var hookPh = WEBHOOK_PH[type] || WEBHOOK_PH_DEFAULT;
+    var secretLabel = type === 8 ? t('sec_8') : t('field_secret');
+    el('addWebhookLabel').textContent = hookLabel;
+    el('editWebhookLabel').textContent = hookLabel;
+    el('addWebhook').placeholder = hookPh;
+    el('editWebhook').placeholder = hookPh;
+    el('addSignLabel').textContent = secretLabel;
+    el('editSignLabel').textContent = secretLabel;
+  }
+
   /** 按推送类型切换三件套标签文案（9=企业微信应用用 企业ID/应用ID/应用Secret，邮箱用默认文案） */
   function setThreeLabels(type) {
     var l = threeLabels(type);
@@ -1157,6 +1283,38 @@
 
   /* -------- 新增 -------- */
 
+  /* 通道名称按推送类型自动预填，降低输入门槛；用户手改过的名字不再覆盖 */
+  var autoChannelName = '';
+
+  function autoFillChannelName(type) {
+    var nameEl = el('addName');
+    if (nameEl.value.trim() && nameEl.value !== autoChannelName) { return; }
+    autoChannelName = t('pt_' + type);
+    nameEl.value = autoChannelName;
+  }
+
+  /** 切换语言时，仍是自动预填的通道名跟随换成当前语言的类型名（用户改过的不动） */
+  function refreshAutoChannelName() {
+    var v = Number(el('addType').value);
+    if (autoChannelName && v && el('addName').value === autoChannelName) {
+      autoChannelName = t('pt_' + v);
+      el('addName').value = autoChannelName;
+    }
+  }
+
+  /** 新增表单按推送类型同步：该显示哪些字段、字段文案、以及自动通道名 */
+  function syncAddForm(type) {
+    var emailRow = NEED_EMAIL[type] ? 'flex' : 'none';
+    el('addWebhookRow').style.display = NEED_WEBHOOK[type] ? 'flex' : 'none';
+    el('addSecretRow').style.display = NEED_SECRET[type] ? 'flex' : 'none';
+    el('addCorpIdRow').style.display = emailRow;
+    el('addAgentIdRow').style.display = emailRow;
+    el('addCorpSecretRow').style.display = emailRow;
+    setThreeLabels(type);
+    setRobotLabels(type);
+    autoFillChannelName(type);
+  }
+
   function fillTypeSelect() {
     var sel = el('addType');
     if (sel.options.length) { return; }
@@ -1165,16 +1323,7 @@
       o.value = d.v; o.textContent = t(d.k);
       sel.appendChild(o);
     });
-    sel.addEventListener('change', function () {
-      var v = Number(sel.value);
-      el('addWebhookRow').style.display = NEED_WEBHOOK[v] ? 'flex' : 'none';
-      el('addSecretRow').style.display = NEED_SECRET[v] ? 'flex' : 'none';
-      var email = NEED_EMAIL[v];
-      setThreeLabels(v);
-      el('addCorpIdRow').style.display = email ? 'flex' : 'none';
-      el('addAgentIdRow').style.display = email ? 'flex' : 'none';
-      el('addCorpSecretRow').style.display = email ? 'flex' : 'none';
-    });
+    sel.addEventListener('change', function () { syncAddForm(Number(sel.value)); });
   }
 
   async function onAdd() {
@@ -1187,13 +1336,7 @@
     el('addAgentId').value = '';
     el('addCorpSecret').value = '';
     el('addErr').style.display = 'none';
-    el('addWebhookRow').style.display = 'none';
-    el('addSecretRow').style.display = 'none';
-    var email = NEED_EMAIL[Number(el('addType').value)];
-    setThreeLabels(Number(el('addType').value));
-    el('addCorpIdRow').style.display = email ? 'flex' : 'none';
-    el('addAgentIdRow').style.display = email ? 'flex' : 'none';
-    el('addCorpSecretRow').style.display = email ? 'flex' : 'none';
+    syncAddForm(Number(el('addType').value));
     openModal('addModal');
   }
 
@@ -1250,6 +1393,7 @@
     el('editWebhookRow').style.display = NEED_WEBHOOK[r.pushType] ? 'flex' : 'none';
     var email = NEED_EMAIL[r.pushType];
     setThreeLabels(r.pushType);
+    setRobotLabels(r.pushType);
     el('editCorpId').value = r.corpId || '';
     el('editAgentId').value = r.agentId || '';
     el('editCorpSecret').value = r.corpSecret || '';
@@ -1465,12 +1609,15 @@
   el('sendBtn').addEventListener('click', onSend);
   el('demoQr').addEventListener('click', function () {
     if (demoChannel && demoChannel.qrCodeUrl) {
+      qrChannel = demoChannel;
       el('qrTitle').textContent = t('qr_title') + '：' + (demoChannel.channelName || '');
       el('qrBig').src = demoChannel.qrCodeUrl;
-      el('groupUrl').href = demoChannel.pushUrl;
       openModal('qrModal');
     }
   });
+  function openGroupUrl() { openChannelGroupChat(qrChannel); }
+  el('groupUrl').addEventListener('click', openGroupUrl);
+  el('groupUrl').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); openGroupUrl(); } });
   el('refreshBtn').addEventListener('click', function () { loadChannels(); });
   el('addBtn').addEventListener('click', onAdd);
   el('addSubmit').addEventListener('click', onAddSubmit);
@@ -1498,6 +1645,8 @@
     pushSend: pushSend,
     getCode: getCode,
     setCode: function (c) { setCode(c); dropToken(); updateCodeBtn(); renderPushCard(); loadChannels(); },
-    setLang: function (l) { LANG = (l === 'en-us' ? 'en-us' : 'zh-cn'); try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {} applyI18n(); updateCodeBtn(); renderPushCard(); if (channelsMeta) { renderChannels(channelsMeta); } else { loadChannels(); } }
+    setLang: function (l) { LANG = (l === 'en-us' ? 'en-us' : 'zh-cn'); try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {} applyI18n(); updateCodeBtn(); renderPushCard(); if (channelsMeta) { renderChannels(channelsMeta); } else { loadChannels(); } },
+    /* page-agent 的 language 只认 zh-CN / en-US，跟随本页语言（浏览器首选语言 + 手动切换的记忆） */
+    agentLang: function () { return LANG === 'en-us' ? 'en-US' : 'zh-CN'; }
   };
 })();

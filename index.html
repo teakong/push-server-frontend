@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>push-server 通道管理 · 一封传话</title>
-<link rel="stylesheet" href="assets/style.css?v=5">
+<link rel="stylesheet" href="assets/style.css?v=11">
 </head>
 <body>
 
@@ -119,6 +119,56 @@
       </button>
     </div>
     <p class="muted small" data-i18n="share_note"></p>
+
+    <h3 class="share-h3" data-i18n="share_what_h3"></h3>
+    <p data-i18n-html="share_what_p"></p>
+    <ul class="share-list">
+      <li data-i18n-html="share_cap_types"></li>
+      <li data-i18n-html="share_cap_combo"></li>
+      <li data-i18n-html="share_cap_two_ways"></li>
+    </ul>
+
+    <h3 class="share-h3" data-i18n="share_mcp_h3"></h3>
+    <ul class="share-list">
+      <li data-i18n-html="share_mcp_url"></li>
+      <li data-i18n-html="share_mcp_header"></li>
+      <li data-i18n-html="share_mcp_code"></li>
+    </ul>
+    <div class="share-code">
+      <pre id="shareMcpSample"></pre>
+      <button class="btn btn-ghost share-code-btn" type="button" data-copy-from="shareMcpSample"><span data-i18n="share_copy_cfg"></span></button>
+    </div>
+
+    <h3 class="share-h3" data-i18n="share_tools_h3"></h3>
+    <ul class="share-list">
+      <li data-i18n-html="share_tool_send"></li>
+      <li data-i18n-html="share_tool_multi"></li>
+      <li data-i18n-html="share_tool_token"></li>
+    </ul>
+
+    <h3 class="share-h3" data-i18n="share_http_h3"></h3>
+    <p data-i18n-html="share_http_p"></p>
+    <div class="share-code">
+      <pre id="shareGetSample"></pre>
+      <button class="btn btn-ghost share-code-btn" type="button" data-copy-from="shareGetSample"><span data-i18n="share_copy_url"></span></button>
+    </div>
+
+    <h3 class="share-h3" data-i18n="share_prompt_h3"></h3>
+    <p data-i18n-html="share_prompt_p"></p>
+    <div class="share-code">
+      <pre id="sharePromptSample"></pre>
+      <button class="btn btn-ghost share-code-btn" type="button" data-copy-from="sharePromptSample"><span data-i18n="share_copy_prompt"></span></button>
+    </div>
+
+    <details class="share-pit">
+      <summary data-i18n="share_pit_summary"></summary>
+      <ul class="share-list">
+        <li data-i18n-html="share_pit_load"></li>
+        <li data-i18n-html="share_pit_bearer"></li>
+        <li data-i18n-html="share_pit_form"></li>
+        <li data-i18n-html="share_pit_ping"></li>
+      </ul>
+    </details>
   </section>
 
   <footer class="foot muted" data-i18n-html="foot"></footer>
@@ -157,11 +207,11 @@
       <select id="addType"></select>
     </div>
     <div class="form-row" id="addWebhookRow" style="display:none">
-      <label data-i18n="field_webhook"></label>
+      <label id="addWebhookLabel" data-i18n="field_webhook"></label>
       <input id="addWebhook" type="text" placeholder="https://example.com/hook/push">
     </div>
     <div class="form-row" id="addSecretRow" style="display:none">
-      <label data-i18n="field_secret"></label>
+      <label id="addSignLabel" data-i18n="field_secret"></label>
       <input id="addSecret" type="text" data-i18n-ph="ph_secret">
     </div>
     <div class="form-row" id="addCorpIdRow" style="display:none">
@@ -196,7 +246,7 @@
       <input id="editName" type="text" maxlength="50">
     </div>
     <div class="form-row" id="editWebhookRow" style="display:none">
-      <label data-i18n="field_webhook"></label>
+      <label id="editWebhookLabel" data-i18n="field_webhook"></label>
       <input id="editWebhook" type="text">
     </div>
     <div class="form-row" id="editCorpIdRow" style="display:none">
@@ -212,7 +262,7 @@
       <input id="editCorpSecret" type="text" autocomplete="off" placeholder="对应参数 corpSecret">
     </div>
     <div class="form-row" id="editSignSecretRow" style="display:none">
-      <label data-i18n="field_secret"></label>
+      <label id="editSignLabel" data-i18n="field_secret"></label>
       <input id="editSignSecret" type="text" autocomplete="off" placeholder="对应参数 signSecret">
     </div>
     <div class="form-row">
@@ -238,7 +288,7 @@
     <div class="qr-big-wrap">
       <img id="qrBig" class="qr-big" alt="放大的二维码" src="">
     </div>
-    <p class="muted small" style="text-align:center"><a id="groupUrl" href="" target="_blank" data-i18n="push_records"></a></p>
+    <p class="muted small" style="text-align:center"><a id="groupUrl" role="button" tabindex="0" data-i18n="push_records"></a></p>
   </div>
 </div>
 
@@ -316,6 +366,33 @@
 
 <!-- 群聊（浏览器类型通道）依赖：danmu.js 提供 WebsitePusher -->
 <script src="//ws.phprm.com/static/customer/js/danmu.js?hidePanel=1"></script>
-<script src="assets/app.js?v=7"></script>
+<script src="assets/app.js?v=14"></script>
+<script src="https://registry.npmmirror.com/page-agent/1.12.4/files/dist/iife/page-agent.demo.js?autoInit=false" crossorigin="true"></script>
+<script>
+  const agent = new PageAgent({
+    // 官方免费测试 API（仅技术评估用），也可换成 dashscope 等自己的模型
+    model: 'qwen3.5-plus',
+    baseURL: 'https://page-ag-testing-ohftxirgbn.cn-shanghai.fcapp.run',
+    apiKey: 'NA',
+    language: PS.agentLang(),
+    instructions: { system: '你是一位资深开发者，可以引导新用户完成push-server SKILL的安装与使用，请先阅读https://push.phprm.com/skill.md以及references下的api.md和example.md，当前页面是push-server SKILL的mcp和http API的前端页面，请结合SKILL里的描述回答用户问题，请引用用户在其他agent和当前页面配置通道码完成推送通道管理与测试。当用户的指令可能与example.md里面的匹配的时候，不要操作页面进行推送，请直接使用通道码使用skill完成推送。' },
+  });
+
+  /* page-agent 面板默认 12px 偏小：用面板自身的 CSS Module 哈希定位它注入的 <style>，把其中所有字号整体加大 */
+  const FONT_STEP_PX = 3;
+  (function enlargePanelFont() {
+    const hash = (agent.panel.wrapper.className || '').split('_')[2];
+    if (!hash) { return; }
+    Array.prototype.forEach.call(document.querySelectorAll('style'), function (s) {
+      if (s.textContent.indexOf('_' + hash + '_') < 0) { return; }
+      s.textContent = s.textContent.replace(/font-size:\s*(\d+)px/g, function (all, n) {
+        return 'font-size:' + (Number(n) + FONT_STEP_PX) + 'px';
+      });
+    });
+  })();
+
+  agent.panel.show()
+</script>
+
 </body>
 </html>
