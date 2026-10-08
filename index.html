@@ -366,7 +366,7 @@
 
 <!-- 群聊（浏览器类型通道）依赖：danmu.js 提供 WebsitePusher -->
 <script src="//ws.phprm.com/static/customer/js/danmu.js?hidePanel=1"></script>
-<script src="assets/app.js?v=14"></script>
+<script src="assets/app.js?v=15"></script>
 <script src="https://registry.npmmirror.com/page-agent/1.12.4/files/dist/iife/page-agent.demo.js?autoInit=false" crossorigin="true"></script>
 <script>
   const agent = new PageAgent({
@@ -389,6 +389,20 @@
         return 'font-size:' + (Number(n) + FONT_STEP_PX) + 'px';
       });
     });
+  })();
+
+  /* 就绪态文案改成引导语：page-agent 的 i18n 实例是私有字段，传不进自定义文案，
+     只能在渲染后盯着状态条，命中「准备就绪/Ready」时替换；任务中的状态一律不动 */
+  const READY_TEXT = PS.agentLang() === 'zh-CN' ? '有问题尽管问我' : 'Ask me anything';
+  (function renameReadyLabel() {
+    const panel = agent.panel.wrapper;
+    const patch = function () {
+      Array.prototype.forEach.call(panel.querySelectorAll('[class*=_statusText_]'), function (el) {
+        if (el.textContent === '准备就绪' || el.textContent === 'Ready') { el.textContent = READY_TEXT; }
+      });
+    };
+    patch();
+    new MutationObserver(patch).observe(panel, { childList: true, subtree: true, characterData: true });
   })();
 
   agent.panel.show()

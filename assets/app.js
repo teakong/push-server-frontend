@@ -872,6 +872,12 @@
 
   /* ---------------- 推送测试卡片 ---------------- */
 
+  /* 推送记录页入口：接口只给二维码图片地址（/services/qr/c/...），
+     把其中的二维码服务段换成 /u/ 就是可直接在浏览器打开的记录页 */
+  function recordsUrl(qrCodeUrl) {
+    return qrCodeUrl && qrCodeUrl.indexOf('/qr/c/') >= 0 ? qrCodeUrl.replace('/qr/c/', '/u/') : '';
+  }
+
   async function loadDemo() {
     if (getCode()) { return; }
     var box = el('demoChannelBox');
@@ -897,10 +903,14 @@
       if (demoChannel.pushUrl) {
         nameEl.href = demoChannel.pushUrl;
         nameEl.target = '_blank';
-        el('demoPushUrl').href = demoChannel.pushUrl;
-        el('demoPushUrl').style.display = '';
       } else {
         nameEl.removeAttribute('href');
+      }
+      var records = recordsUrl(demoChannel.qrCodeUrl);
+      if (records) {
+        el('demoPushUrl').href = records;
+        el('demoPushUrl').style.display = '';
+      } else {
         el('demoPushUrl').style.display = 'none';
       }
       el('demoTag').textContent = (demoChannel.pushTypeDesc || t('pt_1')) + ' · ' + t('demo_tag');
