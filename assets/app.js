@@ -231,7 +231,28 @@
       reset_ok: '通道码已重置',
       reset_fail: '重置失败：',
       chat_invalid: '该通道不支持群聊',
-      chat_unready: '群聊组件未加载，请刷新页面后重试'
+      chat_unready: '群聊组件未加载，请刷新页面后重试',
+
+      /* ---------- 三方授权开通道（create_auth_session / poll_auth_session） ---------- */
+      auth_title: '还没有通道码？用第三方账号一键开通',
+      auth_desc: '无需去官网注册、复制通道码再粘贴。选一种第三方登录，点「生成授权链接」，页面会打开授权页；你在浏览器里确认授权后，本页自动轮询并领取属于你的系统预设通道码。',
+      auth_provider_label: '登录方式',
+      provider_gitee: 'Gitee',
+      provider_github: 'GitHub',
+      provider_dingtalk: '钉钉',
+      provider_feishu: '飞书',
+      auth_start: '生成授权链接',
+      auth_starting: '正在创建授权会话…',
+      auth_open: '点此完成授权（会打开第三方登录页）',
+      auth_reopen: '重新打开授权页',
+      auth_waiting: '等待授权，每 {sec}s 轮询一次…（会话 {min} 分钟内有效）',
+      auth_success: '授权成功，已自动应用你的通道码：',
+      auth_applied: '新通道码已写入本页并应用到 MCP 配置',
+      auth_config_label: '给你的 AI 客户端的配置（mcpConfig）：',
+      auth_stopped: '已停止轮询：',
+      auth_err_prefix: '开通道失败：',
+      auth_cancel: '取消',
+      auth_canceled: '已取消本次授权'
     },
 
     'en-us': {
@@ -436,7 +457,28 @@
       reset_ok: 'Channel code reset',
       reset_fail: 'Reset failed: ',
       chat_invalid: 'Chat is not supported for this channel',
-      chat_unready: 'Chat widget not loaded, please refresh the page'
+      chat_unready: 'Chat widget not loaded, please refresh the page',
+
+      /* ---------- third-party auth onboarding (create_auth_session / poll_auth_session) ---------- */
+      auth_title: 'No channel code yet? Open one with a third-party account',
+      auth_desc: 'No need to register on the website, copy the code and paste it back. Pick a third-party login, click "Create auth link"; the page opens the authorization link, and once you approve in the browser this page polls and claims your own system-preset channel code automatically.',
+      auth_provider_label: 'Login method',
+      provider_gitee: 'Gitee',
+      provider_github: 'GitHub',
+      provider_dingtalk: 'DingTalk',
+      provider_feishu: 'Feishu',
+      auth_start: 'Create auth link',
+      auth_starting: 'Creating the authorization session…',
+      auth_open: 'Click to authorize (opens the third-party login page)',
+      auth_reopen: 'Reopen the authorization page',
+      auth_waiting: 'Waiting for authorization, polling every {sec}s… (session valid for {min} minutes)',
+      auth_success: 'Authorized. Your channel code has been applied automatically: ',
+      auth_applied: 'New channel code saved on this page and applied to the MCP config',
+      auth_config_label: 'Config for your AI client (mcpConfig):',
+      auth_stopped: 'Stopped polling: ',
+      auth_err_prefix: 'Failed to open a channel: ',
+      auth_cancel: 'Cancel',
+      auth_canceled: 'This authorization was canceled'
     }
   };
 
@@ -663,6 +705,8 @@
     setRobotLabels(editTarget ? Number(editTarget.pushType) : Number(el('addType').value) || 0);
     refreshAutoChannelName();
     updateShareSamples();
+    /* 登录方式下拉若已由 tools/list 动态加载，按当前语言重贴标签（未加载时不动静态选项） */
+    renderProviderOptions();
   }
 
   function toggleLang() {
@@ -704,20 +748,18 @@
    * channelCode 参数可覆盖 Header 通道码（未设置通道码的示例模式下按目标通道逐次传入）
    * 返回工具结果里 content[0].text 解析出的业务 JSON：{code, message, data}
    */
-  async function mcpCall(tool, args, channelCode) {
+  /* 发一个 JSON-RPC 请求、解析出信封 env（含 SSE data: 兜底）。tools/call 与 tools/list 共用同一套传输/解析，
+     避免那端棘手的解析逻辑写两份。channelCode 传了就用它作 Header，否则回落本页已存的通道码。 */
+  async function rpcRequest(bodyObj, channelCode) {
     var resp = await fetch(MCP_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json, text/event-stream',
         'X-Push-Channel-Code': channelCode || getCode(),
-        'X-Mcp-Source': 'push-server-frontend'
+        'X-Mcp-Source': 'workbuddy'
       },
-      body: JSON.stringify({
-        jsonrpc: '2.0', id: Date.now(),
-        method: 'tools/call',
-        params: { name: tool, arguments: args || {} }
-      })
+      body: JSON.stringify(bodyObj)
     });
     if (!resp.ok) { throw new Error('MCP HTTP ' + resp.status); }
     var text = await resp.text();
@@ -735,6 +777,15 @@
       if (!env) { throw new Error('MCP 响应解析失败'); }
     }
     if (env.error) { throw new Error('MCP: ' + (env.error.message || JSON.stringify(env.error))); }
+    return env;
+  }
+
+  async function mcpCall(tool, args, channelCode) {
+    var env = await rpcRequest({
+      jsonrpc: '2.0', id: Date.now(),
+      method: 'tools/call',
+      params: { name: tool, arguments: args || {} }
+    }, channelCode);
     var content = env.result && env.result.content && env.result.content[0];
     if (!content || !content.text) { throw new Error('MCP 返回缺少 content'); }
     var biz;
@@ -742,6 +793,12 @@
     try { biz = parseJsonSafe(content.text); } catch (e) { throw new Error(content.text); }
     if (biz.code !== 0) { throw new Error(biz.message || ('MCP 业务错误 code=' + biz.code)); }
     return biz.data;
+  }
+
+  /* 拉一次 tools/list，返回工具数组（每项含 name / inputSchema） */
+  async function listTools() {
+    var env = await rpcRequest({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} });
+    return (env.result && env.result.tools) || [];
   }
 
   /* access_token 缓存：按 expires_in 倒计时，留 120 秒余量；任务内复用 */
@@ -799,6 +856,152 @@
       throw new Error('推送未返回 messageIdList');
     }
     return { code: 0, data: data };
+  }
+
+  /* ---------------- 三方授权开通道（create_auth_session / poll_auth_session） ---------------- */
+
+  /* 模拟 agent 侧的完整链路：建会话 -> 打开授权链接 -> 按 pollInterval 轮询 -> 领到通道码即应用到本页。
+     第三方授权那一跳发生在站外浏览器，本页只驱动 create / poll 两个 MCP 工具。 */
+  var authState = { sessionId: '', timer: 0, running: false };
+
+  function authReset() {
+    if (authState.timer) { clearTimeout(authState.timer); authState.timer = 0; }
+    authState.running = false;
+    authState.sessionId = '';
+  }
+  function authSetBusy(busy) {
+    el('authStartBtn').disabled = busy;
+    el('authCancelBtn').style.display = busy ? '' : 'none';
+  }
+  function authBox(html) {
+    var box = el('authResult');
+    box.innerHTML = html;
+    box.style.display = 'block';
+  }
+
+  /* 三方登录方式：以 tools/list 里 create_auth_session 的 provider 枚举为唯一事实源。
+     缓存枚举值在这里，渲染走当前语言；新增登录方式时官网不用改，顺序也跟随服务端。 */
+  var authProviders = null;
+
+  /** 用缓存的枚举重建下拉；未加载到枚举（authProviders 为空）时保持 index.html 的静态兜底选项 */
+  function renderProviderOptions() {
+    var sel = el('authProvider');
+    if (!sel || !authProviders) { return; }
+    var keep = sel.value;
+    sel.innerHTML = '';
+    authProviders.forEach(function (v) {
+      var key = 'provider_' + String(v).toLowerCase();
+      var label = t(key);
+      var opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = (label === key) ? String(v) : label;
+      sel.appendChild(opt);
+    });
+    /* 尽量保住用户当前选择（枚举大小写可能与原值不同，按忽略大小写回选） */
+    var norm = String(keep).toLowerCase();
+    for (var i = 0; i < sel.options.length; i++) {
+      if (String(sel.options[i].value).toLowerCase() === norm) { sel.selectedIndex = i; break; }
+    }
+  }
+
+  /** 拉 tools/list 取 create_auth_session 的 provider 枚举；读不到就静默维持静态选项 */
+  async function loadProviders() {
+    var enumVals;
+    try {
+      var tools = await listTools();
+      var createTool = null;
+      for (var i = 0; i < tools.length; i++) {
+        if (tools[i] && tools[i].name === 'create_auth_session') { createTool = tools[i]; break; }
+      }
+      var props = createTool && createTool.inputSchema && createTool.inputSchema.properties;
+      enumVals = props && props.provider && props.provider.enum;
+    } catch (e) {
+      return; /* 拉取失败：维持静态选项 */
+    }
+    if (!enumVals || !enumVals.length) { return; }
+    authProviders = enumVals;
+    renderProviderOptions();
+  }
+
+  /** 建会话并开启轮询；provider 省略时取下拉框选中值 */
+  async function startAuthSession(provider) {
+    if (authState.running) { return; }
+    var p = provider || el('authProvider').value;
+    authReset();
+    authState.running = true;
+    authSetBusy(true);
+    authBox('<span class="muted">' + esc(t('auth_starting')) + '</span>');
+    var data;
+    try {
+      data = await mcpCall('create_auth_session', { provider: p });
+    } catch (e) {
+      authFail(e.message);
+      return;
+    }
+    if (!data || !data.sessionId || !data.authUrl) { authFail('missing sessionId/authUrl'); return; }
+    authState.sessionId = data.sessionId;
+    var sec = Number(data.pollInterval) || 5;
+    var min = Math.max(1, Math.round((Number(data.expiresIn) || 600) / 60));
+    authBox('<div class="form-row"><a href="' + esc(data.authUrl) + '" target="_blank" rel="noopener" class="btn btn-primary">'
+      + esc(t('auth_open')) + '</a></div>'
+      + '<p class="muted">' + esc(tpl('auth_waiting', { sec: sec, min: min })) + '</p>');
+    /* 弹窗可能被拦截：链接已在上面，点开授权页失败也不影响轮询 */
+    try { window.open(data.authUrl, '_blank', 'noopener'); } catch (e) {}
+    pollAuthLoop(sec * 1000);
+  }
+
+  /** 单次轮询调度；status 分流：success 结束 / expired·consumed·failed 停止 / pending 续轮 */
+  function pollAuthLoop(intervalMs) {
+    authState.timer = setTimeout(async function () {
+      if (!authState.running) { return; }
+      var data;
+      try {
+        data = await mcpCall('poll_auth_session', { sessionId: authState.sessionId });
+      } catch (e) {
+        authFail(e.message);
+        return;
+      }
+      var status = data && data.status;
+      if (status === 'success') { authSucceed(data); return; }
+      if (status === 'expired' || status === 'consumed' || status === 'failed') {
+        authStopWith(data && data.message ? data.message : status);
+        return;
+      }
+      pollAuthLoop((Number(data && data.pollInterval) || 5) * 1000);
+    }, intervalMs);
+  }
+
+  /** success：把通道码应用到本页（等价于 onSaveCode 的落库 + 刷新），并展示 mcpConfig */
+  function authSucceed(data) {
+    var sid = authState.sessionId;
+    authReset();
+    authSetBusy(false);
+    var code = data.channelCode;
+    if (code) {
+      setCode(code); dropToken(); updateCodeBtn(); renderPushCard(); loadChannels();
+      toast(t('auth_applied'), 'ok');
+    }
+    var cfg = data.mcpConfig;
+    var cfgText = (typeof cfg === 'string') ? cfg : JSON.stringify(cfg, null, 2);
+    authBox('<p>' + esc(t('auth_success')) + '<span class="mono">' + esc(code || '') + '</span></p>'
+      + (cfgText
+        ? '<p class="muted small">' + esc(t('auth_config_label'))
+          + ' <button class="btn btn-ghost share-code-btn" type="button" data-copy-from="authCfgPre">'
+          + esc(t('share_copy_cfg')) + '</button></p>'
+          + '<pre class="result" id="authCfgPre">' + esc(cfgText) + '</pre>'
+        : ''));
+    return sid;
+  }
+
+  function authStopWith(msg) {
+    authReset();
+    authSetBusy(false);
+    authBox('<span class="err">' + esc(t('auth_stopped')) + esc(msg || '') + '</span>');
+  }
+  function authFail(msg) { authStopWith(t('auth_err_prefix') + (msg || '')); }
+  function cancelAuthSession() {
+    if (!authState.running) { return; }
+    authStopWith(t('auth_canceled'));
   }
 
   /* ---------------- 状态 ---------------- */
@@ -1671,6 +1874,15 @@
   el('codeInput').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { onSaveCode(); } });
 
   el('sendBtn').addEventListener('click', onSend);
+  el('authStartBtn').addEventListener('click', function () { startAuthSession(); });
+  el('authCancelBtn').addEventListener('click', cancelAuthSession);
+  /* 授权成功后 mcpConfig 复制按钮：结果区是动态重渲染的，走事件委托绑在常驻容器 #authResult 上 */
+  el('authResult').addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('[data-copy-from]') : null;
+    if (!btn) { return; }
+    var src = el(btn.getAttribute('data-copy-from'));
+    if (src) { copyText(src.textContent, t('copied_sample')); }
+  });
   /* 讲解视频：点封面卡放大播放，× 关闭 */
   el('videoBtn').addEventListener('click', openVideoLayer);
   el('videoShut').addEventListener('click', closeVideoLayer);
@@ -1693,6 +1905,7 @@
   el('resetSubmit').addEventListener('click', onResetSubmit);
 
   applyI18n();
+  loadProviders(); /* 异步用 tools/list 的 provider 枚举覆盖登录方式下拉，失败则维持静态选项 */
   readCodeFromUrl();
   updateCodeBtn();
   updateShareBox();
@@ -1711,6 +1924,11 @@
     loadChannels: loadChannels,
     pushSend: pushSend,
     getCode: getCode,
+    /* 三方授权开通道：低层单次调用（自动化脚本可直接调）+ 高层驱动整条 create→poll 链路并应用通道码 */
+    createAuthSession: function (provider) { return mcpCall('create_auth_session', { provider: provider }); },
+    pollAuthSession: function (sessionId) { return mcpCall('poll_auth_session', { sessionId: sessionId }); },
+    startAuthSession: startAuthSession,
+    loadProviders: loadProviders,
     setCode: function (c) { setCode(c); dropToken(); updateCodeBtn(); renderPushCard(); loadChannels(); },
     setLang: function (l) { LANG = (l === 'en-us' ? 'en-us' : 'zh-cn'); try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {} applyI18n(); updateCodeBtn(); renderPushCard(); if (channelsMeta) { renderChannels(channelsMeta); } else { loadChannels(); } },
     /* page-agent 的 language 只认 zh-CN / en-US，跟随本页语言（浏览器首选语言 + 手动切换的记忆） */

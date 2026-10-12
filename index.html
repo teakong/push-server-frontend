@@ -97,6 +97,26 @@
     <pre id="pushResult" class="result" style="display:none"></pre>
   </section>
 
+  <!-- ============ 三方授权开通道卡片（create_auth_session / poll_auth_session） ============ -->
+  <section class="card" id="authCard">
+    <h2 data-i18n="auth_title"></h2>
+    <p class="muted" data-i18n="auth_desc"></p>
+    <div class="form-row actions">
+      <label for="authProvider" data-i18n="auth_provider_label"></label>
+      <select id="authProvider">
+        <!-- 静态兜底：正常运行时会被 app.js 从 tools/list 的 create_auth_session.provider 枚举动态覆盖，
+             仅在 tools/list 请求失败时保留这份 -->
+        <option value="feishu" data-i18n="provider_feishu">飞书</option>
+        <option value="dingtalk" data-i18n="provider_dingtalk">钉钉</option>
+        <option value="gitee" data-i18n="provider_gitee">Gitee</option>
+        <option value="github" data-i18n="provider_github">GitHub</option>
+      </select>
+      <button class="btn btn-primary" id="authStartBtn" type="button" data-i18n="auth_start"></button>
+      <button class="btn btn-cancel" id="authCancelBtn" type="button" style="display:none" data-i18n="auth_cancel"></button>
+    </div>
+    <div id="authResult" class="result" style="display:none"></div>
+  </section>
+
   <!-- ============ 通道管理卡片 ============ -->
   <section class="card" id="channelCard">
     <div class="card-head">
