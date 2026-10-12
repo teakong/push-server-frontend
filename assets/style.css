@@ -203,6 +203,37 @@ code {
 .form-row.actions { margin-top: 18px; }
 .form-row.actions label { display: none; }
 
+/* ---------- 官网讲解视频（推送表单右侧封面卡 + 放大播放层，视频为 share_voiced.mp4） ---------- */
+.push-body { display: flex; align-items: flex-start; gap: 20px; }
+.push-body > .push-form { flex: 1; min-width: 0; }
+.video-card { flex: none; width: 320px; }
+.video-card .main-video {
+  width: 320px; height: 180px;
+  background: url("https://file.phprm.com/playend.jpg") center / cover no-repeat;
+  border-radius: 12px; overflow: hidden; position: relative; cursor: pointer;
+  box-shadow: 0 24px 60px rgba(31, 60, 79, .18);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.video-card .main-video:hover { transform: translateY(-4px); box-shadow: 0 32px 72px rgba(31, 60, 79, .28); }
+.video-card .main-video > a { display: block; width: 100%; height: 100%; text-align: center; }
+.video-card .main-video > a:hover { text-decoration: none; opacity: 1; }
+.video-card .main-video > a img { margin-top: 20px; }
+.video-card .main-video > a p { margin: 10px 0 0; font-size: 20px; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
+.video-layer {
+  position: fixed; width: 80%; height: 576px; background: #000;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: none; z-index: 300; border-radius: 8px; box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+}
+.video-area { width: 100%; height: 100%; background: #000; border-radius: 8px; overflow: hidden; }
+.video-area video { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+.video-layer .video-shut {
+  color: #fff; height: 36px; width: 36px; display: block;
+  position: absolute; top: -18px; right: -18px; background: var(--brand);
+  border-radius: 50%; text-align: center; line-height: 36px; font-size: 20px;
+  cursor: pointer; z-index: 2; box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+}
+.video-layer .video-shut:hover { background: var(--brand-dark); text-decoration: none; opacity: 1; }
+
 .result {
   background: #0d1117; color: #3fb950; border-radius: var(--radius);
   padding: 13px 16px; font-size: 14px; overflow: auto;
@@ -377,6 +408,9 @@ table.chan .code { font-family: "JetBrains Mono", "Fira Code", Consolas, Menlo, 
   .qr-modal { min-width: 0; }
   .qr-big { width: 260px; height: 260px; }
   .share-linkbox { flex-direction: column; align-items: stretch; }
+  .push-body { display: block; }
+  .video-card { width: 100%; margin-top: 16px; }
+  .video-card .main-video { margin: 0 auto; }
 }
 /* 窄屏放不下「代码块 + 右上角按钮」的预留宽度，按钮落到代码块下方右对齐 */
 @media (max-width: 560px) {

@@ -47,6 +47,9 @@
       ph_body: '请输入要推送的内容（Markdown），选填',
       ph_url: '跳转链接，选填，如 https://example.com/pr/123',
       ph_avatar: '指定发布人头像网址，选填',
+      video_play_text: '播放官网讲解视频',
+      video_bilibili_text: '这里去哔哩哔哩播放官网讲解视频',
+      video_close_title: '关闭视频',
       btn_send: '发送测试',
       btn_refresh: '刷新',
       btn_add: '+ 新增推送通道',
@@ -252,6 +255,9 @@
       ph_body: 'Content to push (Markdown), optional',
       ph_url: 'Jump link, optional, e.g. https://example.com/pr/123',
       ph_avatar: "Sender avatar image URL, optional",
+      video_play_text: 'Play the walkthrough',
+      video_bilibili_text: 'Watch it on bilibili instead',
+      video_close_title: 'Close video',
       btn_send: 'Send Test',
       btn_refresh: 'Refresh',
       btn_add: '+ New Push Channel',
@@ -1596,6 +1602,54 @@
     }
   }
 
+  /* ---------------- 官网讲解视频（封面卡点击放大播放 share_voiced.mp4，与 push-front 分享页同款） ---------------- */
+
+  var DEMO_VIDEO_SRC = 'https://file.phprm.com/share_voiced.mp4';
+
+  function videoLayerHtml(src) {
+    return '<video controls autoplay id="video1" style="width: 100%; height: 100%; object-fit: cover; margin:0 auto;">' +
+      '<source src="' + src + '" type="video/mp4">' +
+      '<a href="https://www.bilibili.com/video/BV1i3411Z7Ak/" target="_blank">' + t('video_bilibili_text') + '</a>' +
+      '</video>';
+  }
+
+  /** 按视频真实比例调整放大层宽度：最多比基准宽 80%，且不超出视口（与官网首页 fitVideoBtnSize 同一算法） */
+  function fitVideoLayer(videoEl, baseWidth, baseHeight) {
+    if (!videoEl) { return; }
+    var doFit = function () {
+      var ratio = videoEl.videoWidth / videoEl.videoHeight;
+      if (!ratio || !isFinite(ratio)) { return; }
+      var targetWidth = Math.round(baseHeight * ratio);
+      var maxWidth = Math.min(Math.round(baseWidth * 1.8), (window.innerWidth || document.documentElement.clientWidth) - 40);
+      if (targetWidth > maxWidth) {
+        targetWidth = maxWidth;
+        videoEl.style.height = '100%';
+        videoEl.style.objectFit = 'cover';
+      } else {
+        videoEl.style.height = 'auto';
+        videoEl.style.objectFit = 'contain';
+      }
+      el('videoLayer').style.width = targetWidth + 'px';
+    };
+    if (videoEl.readyState >= 1) { doFit(); } else { videoEl.addEventListener('loadedmetadata', doFit); }
+  }
+
+  function openVideoLayer() {
+    var baseWidth = window.screen.width > 1199 ? 1152 : 922;
+    var baseHeight = window.screen.width > 1199 ? 720 : 576;
+    var layer = el('videoLayer');
+    layer.style.width = baseWidth + 'px';
+    layer.style.height = baseHeight + 'px';
+    layer.style.display = 'block';
+    el('videoArea').innerHTML = videoLayerHtml(DEMO_VIDEO_SRC);
+    fitVideoLayer(el('video1'), baseWidth, baseHeight);
+  }
+
+  function closeVideoLayer() {
+    el('videoLayer').style.display = 'none';
+    el('videoArea').innerHTML = '';
+  }
+
   /* ---------------- 绑定与启动 ---------------- */
 
   /* Agent 指南药丸：复制 skill.md 地址（对勾反馈 1.5s，对齐官网 mcp.html） */
@@ -1617,6 +1671,9 @@
   el('codeInput').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { onSaveCode(); } });
 
   el('sendBtn').addEventListener('click', onSend);
+  /* 讲解视频：点封面卡放大播放，× 关闭 */
+  el('videoBtn').addEventListener('click', openVideoLayer);
+  el('videoShut').addEventListener('click', closeVideoLayer);
   el('demoQr').addEventListener('click', function () {
     if (demoChannel && demoChannel.qrCodeUrl) {
       qrChannel = demoChannel;

@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>push-server 通道管理 · 一封传话</title>
-<link rel="stylesheet" href="assets/style.css?v=11">
+<link rel="stylesheet" href="assets/style.css?v=12">
 </head>
 <body>
 
@@ -58,27 +58,39 @@
       </div>
     </div>
 
-    <div class="push-form">
-      <div class="form-row">
-        <label for="pushHead" data-i18n="label_head"></label>
-        <input id="pushHead" type="text" maxlength="200" data-i18n-value="default_head" data-i18n-ph="ph_head">
+    <div class="push-body">
+      <div class="push-form">
+        <div class="form-row">
+          <label for="pushHead" data-i18n="label_head"></label>
+          <input id="pushHead" type="text" maxlength="200" data-i18n-value="default_head" data-i18n-ph="ph_head">
+        </div>
+        <div class="form-row">
+          <label for="pushBody" data-i18n="label_body"></label>
+          <textarea id="pushBody" rows="3" data-i18n-ph="ph_body"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="pushUrl" data-i18n="label_url"></label>
+          <input id="pushUrl" type="text" data-i18n-ph="ph_url">
+        </div>
+        <div class="form-row">
+          <label for="pushAvatar" data-i18n="label_avatar"></label>
+          <input id="pushAvatar" type="text" data-i18n-ph="ph_avatar">
+        </div>
+        <div class="form-row actions">
+          <label></label>
+          <button class="btn btn-primary" id="sendBtn" type="button" data-i18n="btn_send"></button>
+          <span class="muted" id="sendTargetTip"></span>
+        </div>
       </div>
-      <div class="form-row">
-        <label for="pushBody" data-i18n="label_body"></label>
-        <textarea id="pushBody" rows="3" data-i18n-ph="ph_body"></textarea>
-      </div>
-      <div class="form-row">
-        <label for="pushUrl" data-i18n="label_url"></label>
-        <input id="pushUrl" type="text" data-i18n-ph="ph_url">
-      </div>
-      <div class="form-row">
-        <label for="pushAvatar" data-i18n="label_avatar"></label>
-        <input id="pushAvatar" type="text" data-i18n-ph="ph_avatar">
-      </div>
-      <div class="form-row actions">
-        <label></label>
-        <button class="btn btn-primary" id="sendBtn" type="button" data-i18n="btn_send"></button>
-        <span class="muted" id="sendTargetTip"></span>
+
+      <!-- 官网讲解视频卡：playend.jpg 封面 + play.png + 文案，点击放大播放 share_voiced.mp4 -->
+      <div class="video-card">
+        <div class="main-video">
+          <a href="javascript:;" id="videoBtn">
+            <img alt="播放" width="80" height="80" src="https://file.phprm.com/play.png">
+            <p data-i18n="video_play_text"></p>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -362,11 +374,17 @@
   </div>
 </div>
 
+<!-- ============ 讲解视频放大播放层（app.js 注入 video controls autoplay，× 关闭） ============ -->
+<div class="video-layer" id="videoLayer">
+  <div class="video-area" id="videoArea"></div>
+  <a class="video-shut" id="videoShut" href="javascript:;" data-i18n-title="video_close_title" title="关闭视频">&times;</a>
+</div>
+
 <div id="toasts"></div>
 
 <!-- 群聊（浏览器类型通道）依赖：danmu.js 提供 WebsitePusher -->
 <script src="//ws.phprm.com/static/customer/js/danmu.js?hidePanel=1"></script>
-<script src="assets/app.js?v=15"></script>
+<script src="assets/app.js?v=16"></script>
 <script src="https://registry.npmmirror.com/page-agent/1.12.4/files/dist/iife/page-agent.demo.js?autoInit=false" crossorigin="true"></script>
 <script>
   const agent = new PageAgent({
