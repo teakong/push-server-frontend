@@ -985,10 +985,13 @@
     var cfgText = (typeof cfg === 'string') ? cfg : JSON.stringify(cfg, null, 2);
     authBox('<p>' + esc(t('auth_success')) + '<span class="mono">' + esc(code || '') + '</span></p>'
       + (cfgText
-        ? '<p class="muted small">' + esc(t('auth_config_label'))
-          + ' <button class="btn btn-ghost share-code-btn" type="button" data-copy-from="authCfgPre">'
-          + esc(t('share_copy_cfg')) + '</button></p>'
+        ? '<p class="muted small">' + esc(t('auth_config_label')) + '</p>'
+          /* 复制按钮绝对定位到 JSON 块右上角：.share-code-btn 需要一个 position:relative 的父级锚点 */
+          + '<div style="position:relative">'
+          + '<button class="btn btn-ghost share-code-btn" type="button" data-copy-from="authCfgPre">'
+          + esc(t('share_copy_cfg')) + '</button>'
           + '<pre class="result" id="authCfgPre">' + esc(cfgText) + '</pre>'
+          + '</div>'
         : ''));
     return sid;
   }
