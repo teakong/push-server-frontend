@@ -98,7 +98,7 @@
       share_tool_multi: '<code>send_multi_message</code>：一次 1~32 条，每条可以带自己的 <code>channelCode</code>。批量采集、跨通道、或用户明确要求分成多条推时才用。',
       share_tool_token: '<code>get_access_token</code>：拿通道码换短期 Bearer 令牌（默认 7200 秒，<code>scope</code> 默认 basic），供 <code>/oauth2/push/*</code> 管理接口用——本页的新增 / 修改 / 删除 / 重置通道码全走这条路。',
       /* 后两个是免注册那一类：与前三个不同，它们不需要通道码 */
-      share_tool_auth_create: '<code>create_auth_session</code>：<strong>不需要通道码</strong>。替还没有通道的用户开一次三方授权会话，回 <code>sessionId</code> + <code>authUrl</code>（会话 600 秒、只能用一次）；登录方式以工具的 <code>provider</code> 枚举为准（当前飞书 / 钉钉 / Gitee / GitHub），先问用户选哪种再调。',
+      share_tool_auth_create: '<code>create_auth_session</code>：<strong>不需要通道码</strong>。替还没有通道的用户开一次性授权会话（会话 600 秒、只能用一次），登录方式以工具的 <code>provider</code> 枚举为准（当前飞书 / 钉钉 / Gitee / GitHub / 邮箱验证码），先问用户选哪种再调。三方登录回 <code>authUrl</code>，在系统浏览器里打开让用户确认授权；选邮箱验证码时还要传 <code>email</code> 和 <code>channelCode</code>（邮件授权入口通道码，必须来自 <code>/services/public/ping</code> 名单），同样回 <code>authUrl</code>，只是那指向本站页面，用户在上面输邮件里的验证码。',
       share_tool_auth_poll: '<code>poll_auth_session</code>：<strong>不需要通道码</strong>。用 <code>sessionId</code> 轮询授权结果，<code>pending</code> 就按返回的 <code>pollInterval</code> 继续等；<code>success</code> 带回只发一次的本人通道码，以及按 <code>X-Mcp-Source</code> 拼好的 <code>mcpConfig</code>；<code>expired</code> / <code>consumed</code> / <code>failed</code> 就停止并重新开会话。第三方令牌全程只在官网与用户浏览器之间流转，Agent 碰不到。',
       share_http_h3: '不想装 MCP？直接发 HTTP 也能推',
       share_http_p: 'GET 推送接口匿名可用，<code>head / body / url / avatar</code> 全走 query 参数，再加 <code>delayMilliseconds</code> 就能定时推送（最长 10 天）。',
@@ -238,12 +238,20 @@
 
       /* ---------- 三方授权开通道（create_auth_session / poll_auth_session） ---------- */
       auth_title: '还没有通道码？用第三方账号一键开通',
-      auth_desc: '无需去官网注册、复制通道码再粘贴。选一种第三方登录，点「生成授权链接」，页面会打开授权页；你在浏览器里确认授权后，本页自动轮询并领取属于你的系统预设通道码。',
+      auth_desc: '无需去官网注册、复制通道码再粘贴。选一种第三方登录，点「生成授权链接」，页面会打开授权页；你在浏览器里确认授权后，本页自动轮询并领取属于你的系统预设通道码。选「邮箱验证码」时先填收件邮箱和邮件授权入口通道码，打开的是本站的验证码输入页，在页面上输码登录即可。',
       auth_provider_label: '登录方式',
       provider_gitee: 'Gitee',
       provider_github: 'GitHub',
       provider_dingtalk: '钉钉',
       provider_feishu: '飞书',
+      provider_email: '邮箱验证码',
+      auth_email_label: '接收邮箱',
+      auth_email_ph: '填写你将收到验证码的邮箱',
+      auth_entry_label: '邮件授权入口通道码',
+      auth_entry_ph: '官网公开示例通道的 32 位通道码，不是你要申请的那个',
+      auth_entry_tip: '邮件授权入口通道码只用来确认这次请求来自官网公开入口，首页 ping 列表里任意一个开着的都可以填；已预填示例通道。',
+      auth_email_required: '请填写接收邮箱和邮件授权入口通道码',
+      auth_open_login: '点此输入邮箱验证码（打开本站登录页）',
       auth_start: '生成授权链接',
       auth_starting: '正在创建授权会话…',
       auth_open: '点此完成授权（会打开第三方登录页）',
@@ -329,7 +337,7 @@
       share_tool_multi: '<code>send_multi_message</code>: 1~32 messages at once, each may carry its own <code>channelCode</code>. Use it for batch collection, cross-channel delivery, or when the user asks for separate messages.',
       share_tool_token: '<code>get_access_token</code>: exchanges the channel code for a short-lived Bearer token (7200s default, <code>scope</code> defaults to basic) for the <code>/oauth2/push/*</code> management API — everything this page does (add / edit / delete / reset code) goes through it.',
       /* The last two are the no-registration pair: unlike the first three they need no channel code */
-      share_tool_auth_create: '<code>create_auth_session</code>: <strong>no channel code needed</strong>. Opens a one-time third-party sign-in session for a user who has no channel yet and returns <code>sessionId</code> + <code>authUrl</code> (600s TTL, single use). Ask the user which login to use first — the supported set comes from the tool <code>provider</code> enum (currently Feishu / DingTalk / Gitee / GitHub).',
+      share_tool_auth_create: '<code>create_auth_session</code>: <strong>no channel code needed</strong>. Opens a one-time sign-in session (600s TTL, single use) for a user who has no channel yet. Ask the user which login to use first — the supported set comes from the tool <code>provider</code> enum (currently Feishu / DingTalk / Gitee / GitHub / email code). Third-party logins return <code>authUrl</code>, open it in the system browser for the user to approve; the email login also takes <code>email</code> plus <code>channelCode</code> (an entry code that must appear in <code>/services/public/ping</code>) and returns <code>authUrl</code> too, pointing at a page on our site where the user types the code from the mail.',
       share_tool_auth_poll: '<code>poll_auth_session</code>: <strong>no channel code needed</strong>. Polls that <code>sessionId</code>: <code>pending</code> means keep waiting at the returned <code>pollInterval</code>; <code>success</code> hands back the single-use personal channel code plus an <code>mcpConfig</code> shaped for the client named in <code>X-Mcp-Source</code>; <code>expired</code> / <code>consumed</code> / <code>failed</code> means stop and open a new session. The third-party token only ever travels between the user browser and the website — the agent never sees it.',
       share_http_h3: 'No MCP? Plain HTTP pushes too',
       share_http_p: 'The GET push endpoint is anonymous: <code>head / body / url / avatar</code> all go in the query string, and <code>delayMilliseconds</code> schedules the push (up to 10 days).',
@@ -467,12 +475,20 @@
 
       /* ---------- third-party auth onboarding (create_auth_session / poll_auth_session) ---------- */
       auth_title: 'No channel code yet? Open one with a third-party account',
-      auth_desc: 'No need to register on the website, copy the code and paste it back. Pick a third-party login, click "Create auth link"; the page opens the authorization link, and once you approve in the browser this page polls and claims your own system-preset channel code automatically.',
+      auth_desc: 'No need to register on the website, copy the code and paste it back. Pick a third-party login, click "Create auth link"; the page opens the authorization link, and once you approve in the browser this page polls and claims your own system-preset channel code automatically. With "Email code", fill in the mailbox and the entry channel code first — the link then opens our own sign-in page where you type the code.',
       auth_provider_label: 'Login method',
       provider_gitee: 'Gitee',
       provider_github: 'GitHub',
       provider_dingtalk: 'DingTalk',
       provider_feishu: 'Feishu',
+      provider_email: 'Email code',
+      auth_email_label: 'Mailbox',
+      auth_email_ph: 'The address that will receive the code',
+      auth_entry_label: 'Entry channel code',
+      auth_entry_ph: 'The 32-char code of a public demo channel on the website, not the one you are applying for',
+      auth_entry_tip: 'The entry code only proves this request came from a public site entry — any enabled code in the homepage ping list works. A demo one is pre-filled.',
+      auth_email_required: 'Fill in both the mailbox and the entry channel code',
+      auth_open_login: 'Click to enter the email code (opens our sign-in page)',
       auth_start: 'Create auth link',
       auth_starting: 'Creating the authorization session…',
       auth_open: 'Click to authorize (opens the third-party login page)',
@@ -908,6 +924,7 @@
     for (var i = 0; i < sel.options.length; i++) {
       if (String(sel.options[i].value).toLowerCase() === norm) { sel.selectedIndex = i; break; }
     }
+    toggleAuthEmailRow();
   }
 
   /** 拉 tools/list 取 create_auth_session 的 provider 枚举；读不到就静默维持静态选项 */
@@ -929,30 +946,54 @@
     renderProviderOptions();
   }
 
+  /** 邮箱验证码要多填收件邮箱和邮件授权入口通道码，其他登录方式把这两行收起来 */
+  function toggleAuthEmailRow() {
+    var sel = el('authProvider');
+    if (!sel) { return; }
+    var isEmail = String(sel.value || '').toLowerCase() === 'email';
+    ['authEmailRow', 'authEntryCodeRow', 'authEntryTip'].forEach(function (id) {
+      var node = el(id);
+      if (node) { node.style.display = isEmail ? '' : 'none'; }
+    });
+    if (isEmail && !el('authEntryCode').value) {
+      /* 预填 ping 名单里的示例通道：它只是入口凭证，不是本次要申请的通道码 */
+      el('authEntryCode').value = (demoChannel && demoChannel.channelCode) || '';
+    }
+  }
+
   /** 建会话并开启轮询；provider 省略时取下拉框选中值 */
   async function startAuthSession(provider) {
     if (authState.running) { return; }
     var p = provider || el('authProvider').value;
+    var args = { provider: p };
+    if (String(p).toLowerCase() === 'email') {
+      /* 邮箱验证码链路：收件邮箱 + 邮件授权入口通道码（服务端按 ping 名单校验入口开着） */
+      args.email = String(el('authEmail').value || '').trim();
+      args.channelCode = String(el('authEntryCode').value || '').trim();
+      if (!args.email || !args.channelCode) { authFail(t('auth_email_required')); return; }
+    }
     authReset();
     authState.running = true;
     authSetBusy(true);
     authBox('<span class="muted">' + esc(t('auth_starting')) + '</span>');
     var data;
     try {
-      data = await mcpCall('create_auth_session', { provider: p });
+      data = await mcpCall('create_auth_session', args);
     } catch (e) {
       authFail(e.message);
       return;
     }
-    if (!data || !data.sessionId || !data.authUrl) { authFail('missing sessionId/authUrl'); return; }
+    /* authUrl 两处都有：三方登录是第三方授权页，邮箱验证码是本站的输码页 */
+    var link = data && (data.authUrl || data.loginUrl);
+    if (!data || !data.sessionId || !link) { authFail('missing sessionId/authUrl'); return; }
     authState.sessionId = data.sessionId;
     var sec = Number(data.pollInterval) || 5;
     var min = Math.max(1, Math.round((Number(data.expiresIn) || 600) / 60));
-    authBox('<div class="form-row"><a href="' + esc(data.authUrl) + '" target="_blank" rel="noopener" class="btn btn-primary">'
-      + esc(t('auth_open')) + '</a></div>'
+    authBox('<div class="form-row"><a href="' + esc(link) + '" target="_blank" rel="noopener" class="btn btn-primary">'
+      + esc(t(data.provider === 'EMAIL' ? 'auth_open_login' : 'auth_open')) + '</a></div>'
       + '<p class="muted">' + esc(tpl('auth_waiting', { sec: sec, min: min })) + '</p>');
     /* 弹窗可能被拦截：链接已在上面，点开授权页失败也不影响轮询 */
-    try { window.open(data.authUrl, '_blank', 'noopener'); } catch (e) {}
+    try { window.open(link, '_blank', 'noopener'); } catch (e) {}
     pollAuthLoop(sec * 1000);
   }
 
@@ -1113,6 +1154,7 @@
       }
       demoChannel = rows[0];
       updateCodePlaceholder();
+      toggleAuthEmailRow();
       el('demoQr').src = demoChannel.qrCodeUrl || '';
       el('demoQr').title = '点击放大';
       el('demoQr').style.cursor = 'zoom-in';
@@ -1885,6 +1927,7 @@
   el('sendBtn').addEventListener('click', onSend);
   el('authStartBtn').addEventListener('click', function () { startAuthSession(); });
   el('authCancelBtn').addEventListener('click', cancelAuthSession);
+  el('authProvider').addEventListener('change', toggleAuthEmailRow);
   /* 授权成功后 mcpConfig 复制按钮：结果区是动态重渲染的，走事件委托绑在常驻容器 #authResult 上 */
   el('authResult').addEventListener('click', function (ev) {
     var btn = ev.target.closest ? ev.target.closest('[data-copy-from]') : null;
@@ -1915,6 +1958,7 @@
 
   applyI18n();
   loadProviders(); /* 异步用 tools/list 的 provider 枚举覆盖登录方式下拉，失败则维持静态选项 */
+  toggleAuthEmailRow();
   readCodeFromUrl();
   updateCodeBtn();
   updateShareBox();
@@ -1934,7 +1978,15 @@
     pushSend: pushSend,
     getCode: getCode,
     /* 三方授权开通道：低层单次调用（自动化脚本可直接调）+ 高层驱动整条 create→poll 链路并应用通道码 */
-    createAuthSession: function (provider) { return mcpCall('create_auth_session', { provider: provider }); },
+    createAuthSession: function (provider, email, channelCode) {
+      var args = { provider: provider };
+      /* EMAIL 这条链路必填收件邮箱 + 邮件授权入口通道码，服务端按 ping 名单校验入口 */
+      if (String(provider).toLowerCase() === 'email') {
+        args.email = email;
+        args.channelCode = channelCode;
+      }
+      return mcpCall('create_auth_session', args);
+    },
     pollAuthSession: function (sessionId) { return mcpCall('poll_auth_session', { sessionId: sessionId }); },
     startAuthSession: startAuthSession,
     loadProviders: loadProviders,

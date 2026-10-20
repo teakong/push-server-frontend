@@ -110,10 +110,21 @@
         <option value="dingtalk" data-i18n="provider_dingtalk">钉钉</option>
         <option value="gitee" data-i18n="provider_gitee">Gitee</option>
         <option value="github" data-i18n="provider_github">GitHub</option>
+        <option value="email" data-i18n="provider_email">邮箱验证码</option>
       </select>
       <button class="btn btn-primary" id="authStartBtn" type="button" data-i18n="auth_start"></button>
       <button class="btn btn-cancel" id="authCancelBtn" type="button" style="display:none" data-i18n="auth_cancel"></button>
     </div>
+    <!-- 仅「邮箱验证码」需要：收件邮箱 + 邮件授权入口通道码（服务端按 ping 名单校验入口是否开着） -->
+    <div class="form-row" id="authEmailRow" style="display:none">
+      <label for="authEmail" data-i18n="auth_email_label"></label>
+      <input type="email" id="authEmail" autocomplete="email" data-i18n-ph="auth_email_ph">
+    </div>
+    <div class="form-row" id="authEntryCodeRow" style="display:none">
+      <label for="authEntryCode" data-i18n="auth_entry_label"></label>
+      <input type="text" id="authEntryCode" maxlength="32" autocomplete="off" data-i18n-ph="auth_entry_ph">
+    </div>
+    <p class="muted" id="authEntryTip" style="display:none" data-i18n="auth_entry_tip"></p>
     <div id="authResult" class="result" style="display:none"></div>
   </section>
 
