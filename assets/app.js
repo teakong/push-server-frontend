@@ -1589,6 +1589,8 @@
     var sel = el('addType');
     if (sel.options.length) { return; }
     PUSH_TYPE_DEFS.forEach(function (d) {
+      /* 组合（pushType=10）是父通道，不出现在「新增推送通道」下拉框里；类型名照旧由 PUSH_TYPE_DEFS 解析 */
+      if (d.v === 10) { return; }
       var o = document.createElement('option');
       o.value = d.v; o.textContent = t(d.k);
       sel.appendChild(o);
