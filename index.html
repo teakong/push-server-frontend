@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>push-server 通道管理 · 一封传话</title>
-<link rel="stylesheet" href="assets/style.css?v=12">
+<link rel="stylesheet" href="assets/style.css?v=14">
 </head>
 <body>
 
@@ -101,7 +101,7 @@
   <section class="card" id="authCard">
     <h2 data-i18n="auth_title"></h2>
     <p class="muted" data-i18n="auth_desc"></p>
-    <div class="form-row actions">
+    <div class="form-row">
       <label for="authProvider" data-i18n="auth_provider_label"></label>
       <select id="authProvider">
         <!-- 静态兜底：正常运行时会被 app.js 从 tools/list 的 create_auth_session.provider 枚举动态覆盖，
@@ -112,20 +112,18 @@
         <option value="github" data-i18n="provider_github">GitHub</option>
         <option value="email" data-i18n="provider_email">邮箱验证码</option>
       </select>
-      <button class="btn btn-primary" id="authStartBtn" type="button" data-i18n="auth_start"></button>
-      <button class="btn btn-cancel" id="authCancelBtn" type="button" style="display:none" data-i18n="auth_cancel"></button>
     </div>
-    <!-- 仅「邮箱验证码」需要：收件邮箱 + 邮件授权入口通道码（服务端按 ping 名单校验入口是否开着） -->
+    <!-- 仅「邮箱验证码」需要：收件邮箱（邮件授权入口通道码由 SDK 自动从 ping 列表取） -->
     <div class="form-row" id="authEmailRow" style="display:none">
       <label for="authEmail" data-i18n="auth_email_label"></label>
       <input type="email" id="authEmail" autocomplete="email" data-i18n-ph="auth_email_ph">
     </div>
-    <div class="form-row" id="authEntryCodeRow" style="display:none">
-      <label for="authEntryCode" data-i18n="auth_entry_label"></label>
-      <input type="text" id="authEntryCode" maxlength="32" autocomplete="off" data-i18n-ph="auth_entry_ph">
+    <div class="form-row auth-actions">
+      <label></label>
+      <button class="btn btn-primary" id="authStartBtn" type="button" data-i18n="auth_start"></button>
+      <button class="btn btn-cancel" id="authCancelBtn" type="button" style="display:none" data-i18n="auth_cancel"></button>
     </div>
-    <p class="muted" id="authEntryTip" style="display:none" data-i18n="auth_entry_tip"></p>
-    <div id="authResult" class="result" style="display:none"></div>
+    <div id="authResult" class="auth-result" style="display:none"></div>
   </section>
 
   <!-- ============ 通道管理卡片 ============ -->
@@ -417,7 +415,8 @@
 
 <!-- 群聊（浏览器类型通道）依赖：danmu.js 提供 WebsitePusher -->
 <script src="//ws.phprm.com/static/customer/js/danmu.js?hidePanel=1"></script>
-<script src="assets/app.js?v=17"></script>
+<script src="assets/push-sdk.js?v=3"></script>
+<script src="assets/app.js?v=20"></script>
 <script src="https://registry.npmmirror.com/page-agent/1.12.4/files/dist/iife/page-agent.demo.js?autoInit=false" crossorigin="true"></script>
 <script>
   const agent = new PageAgent({
