@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>push-sdk.js 接入说明（站长版） - 一封传话</title>
+<meta name="description" content="站长如何用一封传话 push-sdk.js 给自己的网站用户做消息推送：场景、优势、邮箱换通道码、通道管理 API 与界面功能对照。">
+<style>
+  :root{
+    --bg:#f6f8fa; --card:#fff; --line:#e1e4e8; --text:#1a1a2e; --text-strong:#111827;
+    --muted:#6b7280; --brand:#0ea5e9; --brand-dark:#0284c7; --brand-bg:rgba(14,165,233,.08);
+    --code-bg:#f3f4f6; --ok:#059669; --warn:#d97706;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:16px; line-height:1.75; font-weight:400;
+  }
+  a{color:var(--brand); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 20px 72px;}
+
+  header.top{padding:56px 0 28px; border-bottom:1px solid var(--line); margin-bottom:36px;}
+  .brandline{display:flex; align-items:center; gap:10px; font-size:15px; color:var(--muted);}
+  .dot{width:10px; height:10px; border-radius:50%; background:var(--brand); flex:none;}
+  h1{font-size:32px; line-height:1.35; font-weight:600; color:var(--text-strong); margin:14px 0 10px; letter-spacing:-.3px;}
+  .lead{font-size:17px; color:var(--muted); margin:0; max-width:860px;}
+  .quicklinks{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;}
+  .quicklinks a{
+    display:inline-block; padding:6px 14px; border:1px solid var(--line); border-radius:6px;
+    background:var(--card); color:var(--text); font-size:14px;
+  }
+  .quicklinks a:hover{border-color:var(--brand); color:var(--brand-dark); text-decoration:none;}
+
+  nav.toc{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px 20px; margin-bottom:40px;}
+  nav.toc p{margin:0 0 8px; font-size:14px; color:var(--muted);}
+  nav.toc ol{margin:0; padding-left:20px; columns:2; column-gap:32px;}
+  nav.toc li{margin:2px 0; font-size:15px; break-inside:avoid;}
+  @media (max-width:640px){ nav.toc ol{columns:1;} }
+
+  section{margin-bottom:52px;}
+  h2{font-size:24px; font-weight:600; color:var(--text-strong); margin:0 0 6px; letter-spacing:-.2px;}
+  h2 .no{color:var(--brand); margin-right:8px; font-weight:500;}
+  .sub{color:var(--muted); font-size:15px; margin:0 0 20px;}
+  h3{font-size:18px; font-weight:600; color:var(--text-strong); margin:30px 0 10px;}
+  p{margin:0 0 14px;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:14px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px 18px;}
+  .card h4{margin:0 0 6px; font-size:16px; font-weight:600; color:var(--text-strong);}
+  .card p{margin:0; font-size:14px; color:var(--muted); line-height:1.7;}
+
+  ul.plain{margin:0 0 14px; padding-left:22px;}
+  ul.plain li{margin:6px 0;}
+
+  /* 代码块（参考 exempt.html 的 1Panel 终端风格） */
+  .code-card{
+    background:#1e293b; border-radius:12px; overflow:hidden;
+    margin:0 0 16px; box-shadow:0 4px 16px rgba(0,0,0,.15); position:relative;
+  }
+  .code-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; background:#1e293b; border-bottom:1px solid #334155;
+  }
+  .code-dots{display:flex; gap:8px;}
+  .code-dots span{width:12px; height:12px; border-radius:50%; display:inline-block;}
+  .code-dots .dot-red{background:#ff5f56;}
+  .code-dots .dot-yellow{background:#ffbd2e;}
+  .code-dots .dot-green{background:#27c93f;}
+  .code-card pre{
+    margin:0; background:#1e293b; color:#a5f3a5;
+    padding:16px; overflow-x:auto; white-space:pre;
+    font-family:Consolas,Monaco,"Courier New",monospace;
+    font-size:14px; line-height:1.8;
+  }
+  .code-card pre .k{color:#c084fc;}
+  .code-card pre .s{color:#86efac;}
+  .code-card pre .c{color:#64748b; font-style:italic;}
+  .code-card pre .fn{color:#60a5fa;}
+  .copy-btn{
+    background:none; border:none; color:#94a3b8; cursor:pointer;
+    font-size:12px; padding:4px 8px; border-radius:4px;
+    display:flex; align-items:center; gap:4px;
+    font-family:inherit; line-height:1.4; transition:all .15s;
+  }
+  .copy-btn:hover{background:#334155; color:#e2e8f0;}
+  .copy-btn:focus{outline:none;}
+  .copy-btn svg{width:14px; height:14px; fill:currentColor; flex:none;}
+  code.inline{
+    background:var(--code-bg); border-radius:4px; padding:1px 6px; font-size:14px;
+    font-family:"JetBrains Mono","Fira Code","SFMono-Regular",Consolas,Menlo,monospace;
+  }
+
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:8px; overflow:hidden; margin:0 0 16px;}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px;}
+  th{background:var(--code-bg); color:var(--text-strong); font-weight:600; white-space:nowrap;}
+  tr:last-child td{border-bottom:0;}
+  td code{font-family:"JetBrains Mono","Fira Code",Consolas,Menlo,monospace; font-size:13px; color:var(--brand-dark); word-break:break-all;}
+
+  .note{background:var(--brand-bg); border:1px solid rgba(14,165,233,.22); border-radius:8px; padding:14px 16px; margin:0 0 16px; font-size:15px;}
+  .note strong{color:var(--brand-dark); font-weight:600;}
+  .tip{color:var(--muted); font-size:14px; margin:-6px 0 16px;}
+
+  .steps{counter-reset:step; margin:0 0 16px; padding:0; list-style:none;}
+  .steps li{position:relative; padding-left:42px; margin:0 0 16px;}
+  .steps li::before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:1px; width:28px; height:28px; border-radius:50%;
+    background:var(--brand); color:#fff; font-size:14px; line-height:28px; text-align:center;
+  }
+  .steps b{display:block; font-weight:600; color:var(--text-strong); margin-bottom:2px;}
+  .steps span{font-size:14px; color:var(--muted);}
+
+  footer.end{border-top:1px solid var(--line); padding-top:24px; margin-top:56px;}
+  .cta{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:22px 24px; margin-bottom:22px;}
+  .cta h3{margin:0 0 6px;}
+  .cta p{margin:0 0 12px; color:var(--muted); font-size:15px;}
+  .cta .big{font-size:18px; word-break:break-all;}
+  .foot-meta{font-size:13px; color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brandline"><span class="dot"></span>一封传话 · 站长接入文档</div>
+    <h1>用 push-sdk.js 给你的网站加消息推送</h1>
+    <p class="lead">不用自建推送服务，不用逐家对接钉钉、飞书、邮件。用户用邮箱换一个通道码，之后你的网站上发生任何值得提醒的事，都能直接推到他常用的聊天工具里。</p>
+    <div class="quicklinks">
+      <a href="#scenes">适用场景</a>
+      <a href="#why">为什么选一封传话</a>
+      <a href="#start">五分钟接入</a>
+      <a href="#auth">邮箱换通道码</a>
+      <a href="#api">API 与界面对照</a>
+      <a href="#push">发送推送</a>
+      <a href="#danmu">弹幕组件</a>
+      <a href="#skill">SKILL 集成</a>
+      <a href="https://push.phprm.com/message/share.html" target="_blank" rel="noopener">官网分享页</a>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <p>目录</p>
+    <ol>
+      <li><a href="#scenes">什么场景值得给用户推送</a></li>
+      <li><a href="#why">一封传话解决什么问题</a></li>
+      <li><a href="#start">五分钟接入</a></li>
+      <li><a href="#auth">用用户邮箱换通道码</a></li>
+      <li><a href="#api">通道管理 API 与页面功能对照</a></li>
+      <li><a href="#push">发送推送消息</a></li>
+      <li><a href="#faq">常见问题</a></li>
+      <li><a href="#danmu">相关开源项目：AI 弹幕组件</a></li>
+      <li><a href="#skill">SKILL 集成：让 AI 助手会推送</a></li>
+    </ol>
+  </nav>
+
+  <section id="scenes">
+    <h2><span class="no">1</span>什么场景值得给用户推送</h2>
+    <p class="sub">邮件打开率越来越低，站内信要用户回站才看得到，短信成本高还容易进垃圾箱。把「值得让用户马上知道的事」推到他已经在用的钉钉、飞书、Telegram 里，是最省事的做法。</p>
+
+    <div class="grid">
+      <div class="card">
+        <h4>内容更新提醒</h4>
+        <p>新文章、新视频、新版本发布，订阅过的用户第一时间收到标题和链接。</p>
+      </div>
+      <div class="card">
+        <h4>订阅关注的内容</h4>
+        <p>用户订阅作者、栏目、标签或话题，只对真正关注的东西推送，不打扰。</p>
+      </div>
+      <div class="card">
+        <h4>商品到货 / 补货</h4>
+        <p>缺货商品登记「到货提醒」，入库后自动通知排队等待的用户。</p>
+      </div>
+      <div class="card">
+        <h4>价格变动</h4>
+        <p>关注的商品降价、会员涨价、限时折扣开始，价格一变就提醒。</p>
+      </div>
+      <div class="card">
+        <h4>公告与维护通知</h4>
+        <p>停机维护、服务恢复、规则调整，一次推送覆盖所有订阅用户。</p>
+      </div>
+      <div class="card">
+        <h4>订单与物流状态</h4>
+        <p>已支付、已发货、派送中、已签收，关键节点送到用户手机上。</p>
+      </div>
+      <div class="card">
+        <h4>评论、回复与 @ 提醒</h4>
+        <p>有人回复了用户的帖子、评论被点赞，不必守在站内刷新。</p>
+      </div>
+      <div class="card">
+        <h4>到期与续费提醒</h4>
+        <p>会员到期、证书到期、域名续费、试用结束，提前几天提醒。</p>
+      </div>
+      <div class="card">
+        <h4>活动开始 / 开售提醒</h4>
+        <p>预约过的直播、课程、限量商品开售时准时通知。</p>
+      </div>
+      <div class="card">
+        <h4>安全提醒</h4>
+        <p>异地登录、密码变更、绑定信息修改，第一时间告知账号主人。</p>
+      </div>
+      <div class="card">
+        <h4>审批与工单状态</h4>
+        <p>提交的工单有回复、审批通过或被驳回，直接推给发起人。</p>
+      </div>
+      <div class="card">
+        <h4><a href="http://www.kuso.com/favorites.html" target="_blank" rel="noopener">网盘内容更新</a></h4>
+        <p>订阅的文件夹或分享链接有新文件、新版本时，自动推送到用户的聊天工具。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <h2><span class="no">2</span>一封传话解决什么问题</h2>
+    <p class="sub">你自己只需要维护「什么时候推、推给谁、推什么」，剩下的投递工作交给一封传话。</p>
+
+    <ul class="plain">
+      <li><strong>支持多种推送通道</strong>：企业微信群机器人、钉钉群机器人、飞书群机器人、企业微信应用消息、Bark（iOS）、Telegram、Discord、自定义 Webhook、浏览器通知，以及 QQ / 163 / 126 / 搜狐 / 139 / 189 / 新浪 / 阿里云邮箱和官方邮件。用户用哪个工具，就配哪条通道。</li>
+      <li><strong>多通道聚合</strong>：一个组合通道背后可以挂多条子通道，一次调用同时送到值班手机、团队群和邮箱，调用方只存一个通道码。</li>
+      <li><strong>不用重复开发</strong>：不用逐家申请机器人、研究各自的签名与模板、处理令牌过期。你只调一个接口，各家平台的差异由一封传话消化。</li>
+      <li><strong>一个 SDK 统一集成</strong>：<code class="inline">push-sdk.js</code> 同时支持浏览器 <code class="inline">&lt;script&gt;</code>、CommonJS 和 ES Module，前端后台都能用。</li>
+      <li><strong>用户自己管理接收端</strong>：用户想加一条通道、换绑接收工具，在页面里自己操作即可，你的网站不用改代码。</li>
+      <li><strong>推送记录可查</strong>：每次推送都有记录，方便你确认某条通知到底有没有送达。</li>
+    </ul>
+
+    <div class="note">
+      <strong>一句话总结：</strong>你只管业务事件，用户只管选接收渠道，中间的投递、重试、多端适配都交给一封传话。
+    </div>
+  </section>
+
+  <section id="start">
+    <h2><span class="no">3</span>五分钟接入</h2>
+    <p class="sub">整个过程只有四步：引入 SDK、给用户开通道码、把通道码存进用户资料、事件发生时调一次推送。</p>
+
+    <ol class="steps">
+      <li><b>引入 SDK</b><span>在页面底部加一行 script，官方 CDN 直接可用。</span></li>
+      <li><b>创建 SDK 实例</b><span>填一个属于你网站的 <code class="inline">mcpSource</code>，方便在后台区分来源。</span></li>
+      <li><b>给用户开通道码</b><span>用用户邮箱发起授权，用户在官网页输入验证码后，SDK 会把通道码交回来。</span></li>
+      <li><b>推送</b><span>业务事件触发时请求 <code class="inline">/services/push/trigger/通道码</code> 网址，消息送到用户配置的通道。</span></li>
+    </ol>
+
+    <h3>3.1 引入并初始化</h3>
+<pre><span class="k">&lt;script</span> <span class="fn">src</span>=<span class="s">"https://push.phprm.com/static/js/push-sdk.js"</span><span class="k">&gt;&lt;/script&gt;</span>
+<span class="k">&lt;script&gt;</span>
+<span class="k">var</span> pushSdk = YfPush.create({
+  apiBase: <span class="s">'https://www.phprm.com'</span>,  <span class="c">// 默认就是这个地址，可以省略</span>
+  mcpSource: <span class="s">'my-website'</span>            <span class="c">// 你的站点标识，便于在后台区分调用来源</span>
+});
+<span class="k">&lt;/script&gt;</span></pre>
+    <p class="tip">用构建工具的项目也可以直接 <code class="inline">import YfPush from './push-sdk.js'</code>，或在 Node 里 <code class="inline">require('./push-sdk.js')</code>。</p>
+  </section>
+
+  <section id="auth">
+    <h2><span class="no">4</span>用用户邮箱换通道码</h2>
+    <p class="sub">你不需要让用户在你的网站注册账号，也不需要用户先来官网注册。只要拿到用户的邮箱，就能给他开一条专属推送通道。</p>
+
+    <h3>4.1 用户会经历什么</h3>
+    <ol class="steps">
+      <li><b>你发起授权会话</b><span>调用 <code class="inline">pushSdk.createEmailSession(email)</code>，得到一个 10 分钟内有效的授权链接。</span></li>
+      <li><b>用户打开链接</b><span>页面会显示收件邮箱，一封验证码邮件随之发出。</span></li>
+      <li><b>用户填写验证码登录</b><span>在官网页输入邮件里的验证码，完成登录。</span></li>
+      <li><b>SDK 取回通道码</b><span>你轮询 <code class="inline">pushSdk.pollSession(sessionId)</code>，状态变成 <code class="inline">success</code> 时拿到该用户的通道码。</span></li>
+    </ol>
+
+    <div class="note">
+      <strong>一封传话新用户和老用户的区别：</strong>邮箱属于新用户时，登录的同时会自动开通一条属于他的通道；邮箱已经注册过一封传话时，登录后返回的是他账号下已有的通道码，直接复用，不会重复开通。
+    </div>
+
+    <h3>4.2 最省事的方式：直接挂一张授权卡片</h3>
+    <p>SDK 自带一张完整的「一键开通」卡片，包含登录方式下拉、邮箱输入、验证码引导和轮询。你只需要给一个容器：</p>
+<pre><span class="k">&lt;div</span> <span class="fn">id</span>=<span class="s">"auth-slot"</span><span class="k">&gt;&lt;/div&gt;</span>
+
+<span class="k">&lt;script</span> <span class="fn">src</span>=<span class="s">"https://push.phprm.com/static/js/push-sdk.js"</span><span class="k">&gt;&lt;/script&gt;</span>
+<span class="k">&lt;script&gt;</span>
+YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(<span class="s">'#auth-slot'</span>, {
+  title: <span class="s">'订阅更新通知'</span>,
+  desc: <span class="s">'用邮箱接收验证码，开通后新内容会推送到你常用的聊天工具。'</span>,
+  onSuccess: <span class="k">function</span> (result) {
+    <span class="c">// result.channelCode 就是这位用户的推送通道码</span>
+    fetch(<span class="s">'/api/save-channel'</span>, {
+      method: <span class="s">'POST'</span>,
+      headers: { <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span> },
+      body: JSON.stringify({ channelCode: result.channelCode })
+    });
+  }
+});
+<span class="k">&lt;/script&gt;</span></pre>
+    <p class="tip">卡片会自己从服务端读取当前支持的登录方式（飞书、钉钉、Gitee、GitHub、邮箱验证码），官方新增登录方式时你不用改代码。</p>
+
+    <h3>4.3 想自己画界面：手动两步</h3>
+<pre><span class="k">var</span> pushSdk = YfPush.create({ mcpSource: <span class="s">'my-website'</span> });
+
+<span class="c">// 1. 用邮箱创建授权会话</span>
+pushSdk.createEmailSession(<span class="s">'user@example.com'</span>).then(<span class="k">function</span> (session) {
+  <span class="c">// session.sessionId / session.authUrl / session.pollInterval / session.expiresIn</span>
+  window.open(session.authUrl, <span class="s">'_blank'</span>);   <span class="c">// 用户在这里输入邮件验证码</span>
+
+  <span class="c">// 2. 按 pollInterval 轮询，直到 success</span>
+  <span class="k">var</span> timer = setInterval(<span class="k">function</span> () {
+    pushSdk.pollSession(session.sessionId).then(<span class="k">function</span> (r) {
+      <span class="k">if</span> (r.status === <span class="s">'pending'</span>) { <span class="k">return</span>; }
+
+      clearInterval(timer);
+      <span class="k">if</span> (r.status === <span class="s">'success'</span>) {
+        saveChannelCode(r.channelCode);     <span class="c">// 存到你自己的用户资料里</span>
+      } <span class="k">else</span> {
+        <span class="c">// expired / consumed / failed：提示用户重新发起授权</span>
+      }
+    });
+  }, (session.pollInterval || 5) * 1000);
+});</pre>
+
+    <table>
+      <thead><tr><th>轮询状态</th><th>含义</th><th>你要做什么</th></tr></thead>
+      <tbody>
+        <tr><td><code>pending</code></td><td>用户还没完成登录</td><td>按 <code>pollInterval</code> 继续等</td></tr>
+        <tr><td><code>success</code></td><td>通道码已就绪，只返回一次</td><td>立刻保存 <code>channelCode</code> 到用户资料</td></tr>
+        <tr><td><code>expired</code> / <code>consumed</code> / <code>failed</code></td><td>会话过期或已被使用</td><td>停止轮询，提示用户重新发起</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>落地建议：</strong>在用户表里加一个 <code class="inline">push_channel_code</code> 字段。每个用户一条自己的通道码，后续停用、重置、查推送记录互不干扰。</p>
+  </section>
+
+  <section id="api">
+    <h2><span class="no">5</span>通道管理 API 与页面功能对照</h2>
+    <p class="sub">后面这套接口，和你在 <a href="https://push.phprm.com/message/share.html" target="_blank" rel="noopener">一封传话分享页</a> 上看到的按钮一一对应。就算你不写代码，也可以先在那页面上点一遍，理解每条通道在管什么。</p>
+
+    <table>
+      <thead>
+        <tr><th>页面上的功能</th><th>对应方法</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>刷新 / 通道列表</td>
+          <td><code>pushSdk.listChannels(code)</code></td>
+          <td>返回当前父通道和它下面的子通道列表（名称、类型、通道码、状态、二维码地址）。</td>
+        </tr>
+        <tr>
+          <td>+ 新增推送通道</td>
+          <td><code>pushSdk.addChannel(code, params)</code></td>
+          <td>选推送类型 + 填通道名。群机器人要填 Webhook 和加签密钥，企业微信应用要填企业 ID、应用 ID、应用 Secret，邮箱类型要填发信人昵称、邮箱地址、授权码。</td>
+        </tr>
+        <tr>
+          <td>修改</td>
+          <td><code>pushSdk.editChannel(code, params)</code></td>
+          <td>改名、改 Webhook 等配置、启用或停用（<code>status</code> 0/1）。</td>
+        </tr>
+        <tr>
+          <td>删除</td>
+          <td><code>pushSdk.deleteChannel(code, targetCode)</code></td>
+          <td>删除指定子通道。当前页面绑定的那条通道，服务端会拒绝删除。</td>
+        </tr>
+        <tr>
+          <td>重置通道码</td>
+          <td><code>pushSdk.resetChannel(code, targetCode)</code></td>
+          <td>换一个新通道码并返回。旧码立即失效，适合怀疑泄露时使用。</td>
+        </tr>
+        <tr>
+          <td>测试</td>
+          <td><code>pushSdk.sendPushMessage(code, message)</code></td>
+          <td>向指定通道发一条测试消息，确认用户那边能收到。</td>
+        </tr>
+        <tr>
+          <td>推送记录</td>
+          <td><code>pushSdk.recordsUrl(qrCodeUrl)</code></td>
+          <td>把通道的二维码地址换成该通道的推送记录页。</td>
+        </tr>
+        <tr>
+          <td>登录方式下拉</td>
+          <td><code>pushSdk.listProviders()</code></td>
+          <td>返回服务端当前支持的登录方式，用于自己画授权表单。</td>
+        </tr>
+        <tr>
+          <td>一键开通卡片</td>
+          <td><code>pushSdk.createAuthSession()</code> + <code>pushSdk.pollSession()</code></td>
+          <td>也可以直接用 <code>mountAuthCard</code> 挂现成卡片。</td>
+        </tr>
+        <tr>
+          <td>令牌（后台自动）</td>
+          <td><code>pushSdk.accessToken(code)</code></td>
+          <td>用通道码换短期访问令牌，默认 2 小时；遇到 401/403 会自动重取一次，你不用手动管。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <strong>通道码是什么：</strong>一串 32 位十六进制字符，就是一封传话里「往哪个通道发」的凭证。父通道码能推给组内所有子通道，子通道码只推到那一个接收端。
+    </div>
+  </section>
+
+  <section id="push">
+    <h2><span class="no">6</span>发送推送消息</h2>
+    <p class="sub">拿到通道码后，发一条推送只需要请求一个网址：把 head、body、url、avatar 带上即可。</p>
+
+    <h3>6.1 最简单的方式：一个网址就是一次推送</h3>
+<pre><span class="s">https://www.phprm.com/services/push/trigger/你的通道码?head=你订阅的栏目更新了&amp;body=《如何选择推送通道》已发布&amp;url=https://your-site.com/post/123&amp;avatar=https://your-site.com/logo.png</span></pre>
+    <p>直接在浏览器打开这个网址，或用 <code class="inline">fetch</code> / <code class="inline">$.getJSON</code> 请求它，消息就会推送到通道对应的接收端。参数值里带中文、空格或 <code class="inline">&amp;</code> 时，记得先做 URL 编码。</p>
+
+    <h3>6.2 服务端定时任务 / 后台事件：用 POST</h3>
+    <p>「关注的商品到货」「公告更新」这类不是你点一下才发生的事件，放在服务端请求更方便；正文较长时也用 POST。</p>
+<pre><span class="k">curl</span> -X POST <span class="s">"https://www.phprm.com/services/push/trigger/你的通道码"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"head":"补货提醒","body":"你关注的商品已经到货，库存有限。","url":"https://your-site.com/item/123","avatar":"https://your-site.com/logo.png"}'</span></pre>
+    <p class="tip">POST 只接受 <code class="inline">application/json</code>。已经在用 SDK 的项目，也可以继续调用 <code class="inline">pushSdk.sendPushMessage(通道码, { head, body, url, avatar })</code>，参数含义与上面一致。</p>
+
+    <table>
+      <thead><tr><th>参数</th><th>必填</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>head</code></td><td>是</td><td>标题，一条消息一个结论，简短最好。</td></tr>
+        <tr><td><code>body</code></td><td>否</td><td>正文，支持 Markdown；太长时改用 POST。</td></tr>
+        <tr><td><code>url</code></td><td>否</td><td>点击消息后跳转的链接，需为合法网址。</td></tr>
+        <tr><td><code>avatar</code></td><td>否</td><td>图标地址（部分通道支持）。</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.3 安全提醒</h3>
+    <ul class="plain">
+      <li>通道码等同于推送凭证，不要展示给无关的人，也不要写进公开的仓库。</li>
+      <li>组合通道码能触达所有子通道，只放在服务端；前端只使用当前用户自己的子通道码。</li>
+      <li>怀疑泄露时调用 <code class="inline">resetChannel</code> 换码，旧码立即失效。</li>
+      <li>给每个用户单独开子通道，停用、重置、查记录都互不影响。</li>
+    </ul>
+  </section>
+
+  <section id="faq">
+    <h2><span class="no">7</span>常见问题</h2>
+
+    <h3>用户没收到验证码邮件？</h3>
+    <p>先让用户看垃圾邮件和推广邮件目录；确认邮箱拼写无误。授权会话只有 10 分钟，过期就重新调一次 <code class="inline">createEmailSession</code>。</p>
+
+    <h3>轮询返回 expired / consumed / failed？</h3>
+    <p>说明这次会话已经不能用了：停止轮询，让用户重新发起一次授权即可。不要复用旧的 <code class="inline">sessionId</code>。</p>
+
+    <h3>调用接口提示令牌失效？</h3>
+    <p>SDK 内部会自动重新换一次令牌。如果还是失败，通常是页面停留太久或通道码已被重置，刷新页面或重新获取通道码。</p>
+
+    <h3>通道码格式是什么？</h3>
+    <p>32 位十六进制字符串，不区分大小写。二维码只是它的另一种展示形式。</p>
+
+    <h3>用户想换接收方式怎么办？</h3>
+    <p>让用户在一封传话的通道管理页里新增或修改通道即可，你的网站代码不需要动；他的通道码保持不变。</p>
+
+    <h3>需要自己的服务器做中转吗？</h3>
+    <p>不需要。trigger 网址从任何地方请求都能用；SDK 也从浏览器直连官方服务。定时轮询任务、后台事件在服务端直接请求 trigger 接口即可。</p>
+  </section>
+
+  <section id="danmu">
+    <h2><span class="no">8</span>相关开源项目：AI 弹幕组件</h2>
+    <p class="sub">同一作者开源的 <a href="https://github.com/teakong/danmu" target="_blank" rel="noopener">teakong/danmu</a>，把实时弹幕接进任意网站。它复用的就是本页介绍的推送通道：一条弹幕就是一条推送消息，页面通过 WebSocket 实时收到并渲染。</p>
+
+    <ul class="plain">
+      <li><strong>一行代码接入</strong>：一个 script 标签自动加载依赖、连接通道、渲染弹幕，纯前端即可运行。</li>
+      <li><strong>实时 WebSocket 推送</strong>：基于 Socket.IO，订阅同一通道的所有页面同时看到弹幕。</li>
+      <li><strong>AI 自动弹幕</strong>：按设定间隔识别当前页面内容，调用大模型生成弹幕并推送。</li>
+      <li><strong>交互与插件</strong>：弹幕支持点赞、关闭；<code class="inline">plugins=control</code> 打开左下角设置面板，<code class="inline">plugins=input</code> 打开底部发送框。</li>
+      <li><strong>后端可过滤</strong>：<code class="inline">danMuFilter</code> 回调里异步校验内容、查询点赞数，适合需要审核的场景。</li>
+      <li><strong>兼容性好</strong>：严格 ES5，兼容 IE 与 GBK 页面；localStorage 不可用时自动回退 cookie。</li>
+    </ul>
+
+    <h3>一句话集成</h3>
+<pre><span class="k">&lt;script</span> <span class="fn">src</span>=<span class="s">"https://ws.phprm.com/static/customer/js/danmu.js?appName=我的网站&amp;channelCode=你的通道码&amp;danMu=1&amp;plugins=control,input"</span><span class="k">&gt;&lt;/script&gt;</span></pre>
+    <p>发出一条弹幕同样是一句话，所有订阅该通道的页面都会实时看到：</p>
+<pre>$.getJSON(<span class="s">'https://www.phprm.com/services/push/trigger/你的通道码?head=这是第一条弹幕'</span>);</pre>
+    <p class="tip">更多参数、插件与后端过滤示例见仓库说明：<a href="https://github.com/teakong/danmu" target="_blank" rel="noopener">github.com/teakong/danmu</a>（国内可用 <a href="https://gitee.com/teakong/danmu" target="_blank" rel="noopener">Gitee 镜像</a>）</p>
+  </section>
+
+  <section id="skill">
+    <h2><span class="no">9</span>SKILL 集成：让 AI 助手会推送</h2>
+    <p class="sub">官方开源的 Agent Skill <a href="https://github.com/teakong/push-server" target="_blank" rel="noopener">teakong/push-server</a>，把「任务完成后推一条通知」变成 AI 助手的默认动作。纯 MCP 调用，不需要脚本或任何运行时依赖，Trae、Claude、Cursor、Workbuddy 等客户端都适用。</p>
+
+    <ul class="plain">
+      <li><strong>一条命令安装</strong>：<code class="inline">npx skills add teakong/push-server</code>，装到全局加 <code class="inline">-g</code>。</li>
+      <li><strong>纯 MCP，无依赖</strong>：推送走 <code class="inline">push-server</code> 远程 MCP 服务器，不生成脚本、不装运行时。</li>
+      <li><strong>推送规范内置</strong>：标题结论先行、正文 Markdown 排版、单条与多条（批量采集）的判定、发送前链接清洗，都写在 Skill 里。</li>
+      <li><strong>结果可回查</strong>：内置令牌换取与消息分页 / 详情接口，AI 能替你查已经推过的消息、管理通道。</li>
+      <li><strong>结构化入库</strong>：<code class="inline">body</code> 直接传 JSON，经 Webhook 通道原样转发到你的业务服务端。</li>
+    </ul>
+
+    <h3>安装与配置</h3>
+    <p>安装 skill 不等于配好通道，还需要在 AI 客户端里添加远程 MCP 服务器（Streamable HTTP），并把通道码填进 Header：</p>
+<pre><span class="c"># 安装到当前项目（全局加 -g）</span>
+npx skills add teakong/push-server
+npx skills add teakong/push-server <span class="k">-g</span></pre>
+<pre>{
+  <span class="s">"mcpServers"</span>: {
+    <span class="s">"push-server"</span>: {
+      <span class="s">"url"</span>: <span class="s">"https://www.phprm.com/services/push/mcp"</span>,
+      <span class="s">"headers"</span>: {
+        <span class="s">"X-Push-Channel-Code"</span>: <span class="s">"你的32位通道码"</span>,
+        <span class="s">"X-Mcp-Source"</span>: <span class="s">"trae"</span>
+      }
+    }
+  }
+}</pre>
+    <p class="tip">传输类型选 Streamable HTTP（不是 SSE）；部分客户端需要 <code class="inline">"type": "streamable-http"</code>，不认该字段就删掉这一行。通道码只填在 Header 里，不要提交进仓库。更多说明见 <a href="https://github.com/teakong/push-server" target="_blank" rel="noopener">github.com/teakong/push-server</a>。</p>
+  </section>
+
+  <footer class="end">
+    <div class="cta">
+      <h3>先在一封传话官网体验通道管理</h3>
+      <p>用邮箱开通一条通道，新增、修改、测试推送都能直接在页面上完成，理解清楚之后再把接口接进你的网站。</p>
+      <p class="big"><a href="https://push.phprm.com/message/share.html" target="_blank" rel="noopener">https://push.phprm.com/message/share.html</a></p>
+      <p class="tip" style="margin:8px 0 0;">以上页面样式仅供参考，可以由网站开发人员自定义样式。</p>
+      <p style="margin:10px 0 0;font-size:15px;color:var(--muted);">
+        控制台与注册：<a href="https://push.phprm.com/mcp.html" target="_blank" rel="noopener">https://push.phprm.com/mcp.html</a>
+      </p>
+    </div>
+    <p class="foot-meta">push-sdk.js 接入说明 · 一封传话 · 本文示例均支持SKILL接入任意agent。</p>
+  </footer>
+
+</div>
+<script>
+(function () {
+  function markCopied(btn) {
+    var label = btn.querySelector('.copy-label');
+    var old = label.textContent;
+    label.textContent = '已复制';
+    setTimeout(function () { label.textContent = old; }, 1500);
+  }
+  function legacyCopy(text, onDone) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    if (ok) { onDone(); }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('pre'), function (pre) {
+    var card = document.createElement('div');
+    card.className = 'code-card';
+
+    var head = document.createElement('div');
+    head.className = 'code-head';
+    head.innerHTML = '<div class="code-dots"><span class="dot-red"></span>'
+      + '<span class="dot-yellow"></span><span class="dot-green"></span></div>';
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>'
+      + '<span class="copy-label">复制</span>';
+    head.appendChild(btn);
+
+    pre.parentNode.insertBefore(card, pre);
+    card.appendChild(head);
+    card.appendChild(pre);
+
+    btn.addEventListener('click', function () {
+      var text = pre.textContent;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () {
+          markCopied(btn);
+        }, function () {
+          legacyCopy(text, function () { markCopied(btn); });
+        });
+      } else {
+        legacyCopy(text, function () { markCopied(btn); });
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
