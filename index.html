@@ -413,8 +413,15 @@
 
 <div id="toasts"></div>
 
-<!-- 群聊（浏览器类型通道）依赖：danmu.js 提供 WebsitePusher -->
-<script src="https://ws.phprm.com/static/customer/js/danmu.js?hidePanel=1"></script>
+<!-- 一行 JS 集成 AI 弹幕 -->
+<script>
+(function() {
+    var dm = document.createElement("script");
+    dm.src = "https://ws.phprm.com/static/customer/js/danmu.js?appName=Qoder数据统计&channelCode=3db15cb9ff360873027019296797c796&hideDialog=1&danMu=1&plugins=control,input";
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(dm, s);
+})();
+</script>
 <script src="assets/push-sdk.js?v=3"></script>
 <script src="assets/app.js?v=20"></script>
 
