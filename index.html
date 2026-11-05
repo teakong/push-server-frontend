@@ -424,6 +424,18 @@
 </script>
 <script src="assets/push-sdk.js?v=3"></script>
 <script src="assets/app.js?v=20"></script>
+<script>
+/* 托管平台在响应末尾注入水印脚本，元素在本脚本之后才挂载，故边观察边移除；它遮住右下角弹幕图标 */
+(function () {
+  var kill = function () {
+    var el = document.getElementById('qoder-sites-watermark');
+    if (el) el.remove();
+  };
+  kill();
+  new MutationObserver(kill).observe(document.documentElement, { childList: true });
+  document.addEventListener('DOMContentLoaded', kill);
+})();
+</script>
 
 </body>
 </html>
