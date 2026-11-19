@@ -242,7 +242,7 @@ code {
 .video-card { flex: none; width: 320px; }
 .video-card .main-video {
   width: 320px; height: 180px;
-  background: url("https://file.phprm.com/playend.jpg") center / cover no-repeat;
+  background: url("https://api.phprm.com/file/playend.jpg") center / cover no-repeat;
   border-radius: 12px; overflow: hidden; position: relative; cursor: pointer;
   box-shadow: 0 24px 60px rgba(31, 60, 79, .18);
   transition: transform 0.3s ease, box-shadow 0.3s ease;

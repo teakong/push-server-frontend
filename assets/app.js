@@ -564,7 +564,19 @@
 
   /* ---------------- 基础工具 ---------------- */
 
-  function el(id) { return document.getElementById(id); }
+  /* 安全取元素：管理/授权卡已交给 SDK，旧 DOM 不再存在；返回一个脱离文档的哑元素，
+     使残留的只读访问/事件绑定变成无害空操作，保证官网其它功能不受影响。 */
+  var _deadEl = null;
+  function el(id) {
+    var node = document.getElementById(id);
+    if (node) { return node; }
+    if (!_deadEl) {
+      _deadEl = document.createElement('div');
+      _deadEl.value = ''; _deadEl.options = []; _deadEl.disabled = false;
+      _deadEl.focus = function () {}; _deadEl.select = function () {};
+    }
+    return _deadEl;
+  }
 
   function esc(s) {
     return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -724,18 +736,10 @@
       node.setAttribute('aria-label', v);
     });
     el('langBtn').textContent = t('lang_btn');
-    /* 下拉项文案（状态） */
-    var on = el('editStatus').options[0], off = el('editStatus').options[1];
-    if (on) { on.textContent = t('status_on'); }
-    if (off) { off.textContent = t('status_off'); }
     /* 切换语言会把 data-i18n-ph 的占位符重置，这里把 ping 示例通道码补回设置弹窗 */
     updateCodePlaceholder();
-    /* 群机器人字段文案由 JS 覆盖，语言切换后按当前类型重刷 */
-    setRobotLabels(editTarget ? Number(editTarget.pushType) : Number(el('addType').value) || 0);
-    refreshAutoChannelName();
     updateShareSamples();
-    /* 登录方式下拉若已由 tools/list 动态加载，按当前语言重贴标签（未加载时不动静态选项） */
-    renderProviderOptions();
+    /* 授权卡/管理面板文案由 SDK 自带，官网这里只处理保留的推送卡/分享/设置弹窗 */
   }
 
   function toggleLang() {
@@ -744,8 +748,7 @@
     applyI18n();
     updateCodeBtn();
     renderPushCard();
-    if (channelsMeta) { renderChannels(channelsMeta); }
-    else { loadChannels(); }
+    mountPortal();   /* 管理面板由 SDK 提供，语言切换时重挂 */
   }
 
   /* ---------------- 弹窗 ---------------- */
@@ -975,6 +978,38 @@
   var channelRows = [];     /* channel/list 渲染用行（含完整 channelCode） */
   var channelsMeta = null;  /* channel/list 顶层父通道信息 */
 
+  /* ---------------- 授权 + 通道管理：统一交给 push-sdk.js ----------------
+     官网不再自建授权卡/管理表格，全部由 YfPush.mountAuthCard 提供。
+     - 已有通道码：SDK 直接渲染管理面板（opt.code）
+     - 无码：SDK 渲染授权卡，授权成功后就地展开管理面板
+     SDK 回写的通道码同步到本页 LocalStorage / 推送卡 / 分享网址。 */
+  var portalHandle = null;
+  function mountPortal() {
+    var host = el('yfPortal');
+    if (!host) { return; }
+    if (portalHandle && typeof portalHandle.destroy === 'function') {
+      try { portalHandle.destroy(); } catch (e) {}
+    }
+    portalHandle = yf.mountAuthCard(host, {
+      code: getCode() || '',
+      mcpSource: 'workbuddy',
+      onSuccess: function (r) {
+        var code = r && r.channelCode ? String(r.channelCode).toLowerCase() : '';
+        if (!code) { return; }
+        var changed = normCode(getCode()) !== code;
+        setCode(code); dropToken();          /* 授权成功：无条件写入并清令牌，避免码不一致 */
+        updateCodeBtn(); renderPushCard();
+        if (changed) { toast(t('code_saved'), 'ok'); }
+      },
+      onCodeChanged: function (code) {
+        if (code && code !== normCode(getCode())) {
+          setCode(String(code).toLowerCase()); dropToken();
+          updateCodeBtn(); renderPushCard();
+        }
+      }
+    });
+  }
+
   /* 通道码输入框的默认示例文案；ping 拿到真实示例通道码后会被替换 */
   function updateCodePlaceholder() {
     var input = el('codeInput');
@@ -1069,7 +1104,6 @@
       }
       demoChannel = rows[0];
       updateCodePlaceholder();
-      toggleAuthEmailRow();
       el('demoQr').src = demoChannel.qrCodeUrl || '';
       el('demoQr').title = '点击放大';
       el('demoQr').style.cursor = 'zoom-in';
@@ -1270,79 +1304,6 @@
   /* 二维码浮层当前对应的通道：浮层里的「推送记录」按钮复用表格里的同名按钮逻辑 */
   var qrChannel = null;
 
-  el('channelTableWrap').addEventListener('click', function (ev) {
-    /* 二维码缩略图 → 打开放大浮层 */
-    var qrImg = ev.target.closest ? ev.target.closest('img.qr[data-qr]') : null;
-    if (qrImg) {
-      qrChannel = channelRows[Number(qrImg.getAttribute('data-i'))] || null;
-      el('qrTitle').textContent = t('qr_title') + '：' + (qrImg.getAttribute('data-name') || '');
-      el('qrBig').src = qrImg.getAttribute('data-qr');
-      openModal('qrModal');
-      return;
-    }
-
-    /* 单击昵称进入编辑模式 */
-    var nick = ev.target.closest ? ev.target.closest('.nickname') : null;
-    if (nick) {
-      var idx = Number(nick.getAttribute('data-i'));
-      var r = channelRows[idx];
-      if (!r || !r.channelMemberRelId) { return; }
-      if (nick.querySelector('input')) { return; }
-      var oldVal = r.nickname || '';
-      var input = document.createElement('input');
-      input.type = 'text';
-      input.value = oldVal;
-      input.maxLength = 16;
-      input.className = 'nickname-edit';
-      input.style.width = '140px';
-      nick.textContent = '';
-      nick.appendChild(input);
-      input.focus();
-      input.select();
-
-      async function doSave() {
-        var val = input.value.trim();
-        if (val === oldVal) { nick.textContent = oldVal || '-'; return; }
-        input.disabled = true;
-        try {
-          await oauth('/oauth2/push/channel/member/edit', { channelMemberRelId: r.channelMemberRelId, nickname: val }, true);
-          r.nickname = val;
-          toast(t('nick_ok'), 'ok');
-          loadChannels();
-        } catch (e) {
-          toast(t('nick_fail') + (e.message || e), 'err', 6000);
-          nick.textContent = oldVal || '-';
-        }
-      }
-      input.addEventListener('keydown', function (ev2) { if (ev2.key === 'Enter') { ev2.preventDefault(); doSave(); } if (ev2.key === 'Escape') { nick.textContent = oldVal || '-'; } });
-      input.addEventListener('blur', function () { doSave(); });
-      return;
-    }
-
-    var btn = ev.target.closest ? ev.target.closest('button[data-op]') : null;
-    if (!btn) { return; }
-    var row = channelRows[Number(btn.getAttribute('data-i'))];
-    if (!row) { return; }
-    var op = btn.getAttribute('data-op');
-    if (op === 'chat') {
-      openChannelGroupChat(row);
-    } else if (op === 'test') {
-      openTestModal(row);
-    } else if (op === 'copy') {
-      copyText(row.channelCode, t('copied_code'));
-    } else if (op === 'edit') {
-      openEdit(row);
-    } else if (op === 'del') {
-      el('delTarget').textContent = t('del_target') + (row.channelName || '') + ' · ' + maskCode(row.channelCode);
-      el('delSubmit').setAttribute('data-code', row.channelCode);
-      if (row.channelCode === getCode()) {
-        el('delTarget').textContent += t('del_current_tip');
-      }
-      openModal('delModal');
-    } else if (op === 'reset') {
-      openReset(row);
-    }
-  });
 
   /**
    * 通道名右侧的「群聊」（仅浏览器类型通道 pushType=1）：
@@ -1434,15 +1395,6 @@
     setTimeout(function () { el('testHead').focus(); }, 60);
   }
 
-  ['testHead', 'testBody', 'testUrl', 'testAvatar'].forEach(function (id) {
-    el(id).addEventListener('input', refreshTestApiUrl);
-    el(id).addEventListener('change', refreshTestApiUrl);
-  });
-
-  el('testCopyUrl').addEventListener('click', function () {
-    var url = buildTestApiUrl();
-    if (url) { copyText(url, t('copy_api_ok')); }
-  });
 
   /**
    * 推送：GET 拼好的 API 网址直推（/services/push/send/{code}，与官网 testMessageSend 同链路）。
@@ -1470,7 +1422,6 @@
       btn.disabled = false; btn.textContent = t('btn_push');
     }
   }
-  el('testPushBtn').addEventListener('click', onTestPush);
 
   /* -------- 新增 -------- */
 
@@ -1751,7 +1702,7 @@
     updateCodeBtn();
     renderPushCard();
     toast(t('code_saved'), 'ok');
-    loadChannels();
+    mountPortal();
   }
 
   function onClearCode() {
@@ -1764,7 +1715,7 @@
     renderPushCard();
     toast(t('code_cleared'), 'ok');
     loadDemo();
-    loadChannels();
+    mountPortal();
   }
 
   /* ---------------- 启动 ---------------- */
@@ -1784,7 +1735,7 @@
 
   /* ---------------- 官网讲解视频（封面卡点击放大播放 share_voiced.mp4，与 push-front 分享页同款） ---------------- */
 
-  var DEMO_VIDEO_SRC = 'https://file.phprm.com/share_voiced.mp4';
+  var DEMO_VIDEO_SRC = 'https://api.phprm.com/file/share_voiced.mp4';
 
   function videoLayerHtml(src) {
     return '<video controls autoplay id="video1" style="width: 100%; height: 100%; object-fit: cover; margin:0 auto;">' +
@@ -1849,16 +1800,7 @@
   el('codeInput').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { onSaveCode(); } });
 
   el('sendBtn').addEventListener('click', onSend);
-  el('authStartBtn').addEventListener('click', function () { startAuthSession(); });
-  el('authCancelBtn').addEventListener('click', cancelAuthSession);
-  el('authProvider').addEventListener('change', toggleAuthEmailRow);
-  /* 授权成功后 mcpConfig 复制按钮：结果区是动态重渲染的，走事件委托绑在常驻容器 #authResult 上 */
-  el('authResult').addEventListener('click', function (ev) {
-    var btn = ev.target.closest ? ev.target.closest('[data-copy-from]') : null;
-    if (!btn) { return; }
-    var src = el(btn.getAttribute('data-copy-from'));
-    if (src) { copyText(src.textContent, t('copied_sample')); }
-  });
+  /* 授权卡与 mcpConfig 复制按钮由 SDK 内部绑定，官网不再自建 */
   /* 讲解视频：点封面卡放大播放，× 关闭 */
   el('videoBtn').addEventListener('click', openVideoLayer);
   el('videoShut').addEventListener('click', closeVideoLayer);
@@ -1873,26 +1815,18 @@
   function openGroupUrl() { openChannelGroupChat(qrChannel); }
   el('groupUrl').addEventListener('click', openGroupUrl);
   el('groupUrl').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); openGroupUrl(); } });
-  el('refreshBtn').addEventListener('click', function () { loadChannels(); });
-  el('addBtn').addEventListener('click', onAdd);
-  el('addSubmit').addEventListener('click', onAddSubmit);
-  el('editSubmit').addEventListener('click', onEditSubmit);
-  el('delSubmit').addEventListener('click', onDelSubmit);
-  el('resetSubmit').addEventListener('click', onResetSubmit);
 
   applyI18n();
-  loadProviders(); /* 异步用 tools/list 的 provider 枚举覆盖登录方式下拉，失败则维持静态选项 */
-  toggleAuthEmailRow();
   readCodeFromUrl();
   updateCodeBtn();
   updateShareBox();
   bindShareBox();
   renderPushCard();
   if (getCode()) {
-    loadChannels();
+    mountPortal();       /* 已有码：SDK 直接渲染管理面板 */
   } else {
     loadDemo();
-    loadChannels(); /* 渲染占位提示 */
+    mountPortal();       /* 无码：SDK 渲染授权卡 */
   }
 
   /* 暴露给自动化验证 / 调试 */
@@ -1914,8 +1848,8 @@
     pollAuthSession: function (sessionId) { return mcpCall('poll_auth_session', { sessionId: sessionId }); },
     startAuthSession: startAuthSession,
     loadProviders: loadProviders,
-    setCode: function (c) { setCode(c); dropToken(); updateCodeBtn(); renderPushCard(); loadChannels(); },
-    setLang: function (l) { LANG = (l === 'en-us' ? 'en-us' : 'zh-cn'); try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {} applyI18n(); updateCodeBtn(); renderPushCard(); if (channelsMeta) { renderChannels(channelsMeta); } else { loadChannels(); } },
+    setCode: function (c) { setCode(c); dropToken(); updateCodeBtn(); renderPushCard(); mountPortal(); },
+    setLang: function (l) { LANG = (l === 'en-us' ? 'en-us' : 'zh-cn'); try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {} applyI18n(); updateCodeBtn(); renderPushCard(); mountPortal(); },
     /* page-agent 的 language 只认 zh-CN / en-US，跟随本页语言（浏览器首选语言 + 手动切换的记忆） */
     agentLang: function () { return LANG === 'en-us' ? 'en-US' : 'zh-CN'; }
   };

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>SDK 接入演示 · 一封传话</title>
+<!--
+  这个演示页引入官网 style.css，只是为了让它和你看到的官网 index.html 长得一样。
+  你自己的网站集成 push-sdk.js 时【不需要】引这个 style.css ——
+  SDK 已把所需样式注入并限定在 .yf-auth / .yf-mgr / .yf-portal 作用域内，
+  不会改动你网站原有的样式和功能（详见 push-sdk.js 头部注释）。
+-->
+<link rel="stylesheet" href="assets/style.css?v=14">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a href="/push-server-frontend"><span class="brand">push-server<span class="sub"> · SDK 接入演示</span></span></a>
+    <span style="flex:1"></span>
+    <a class="keybtn" href="https://push.phprm.com/skill.md" target="_blank" rel="noopener">Agent 接入指南</a>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:24px">
+
+  <section class="card">
+    <div class="card-head">
+      <h2>开通推送通道</h2>
+    </div>
+    <div id="auth-slot"></div>
+    <p id="result" class="muted small" style="display:none;margin-top:14px"></p>
+  </section>
+
+  <p class="muted small">提示：通道管理面板在<b>授权成功之后</b>会出现在上方卡片里，可以直接新增 / 修改 / 删除子通道、换码、测试推送，无需登录。</p>
+
+</main>
+
+<script src="assets/push-sdk.js?v=8"></script>
+<script>
+  YfPush.create({ mcpSource: 'my-test-page' }).mountAuthCard('#auth-slot', {
+    title: '',
+    onSuccess: function (r) {
+      var el = document.getElementById('result');
+      el.textContent = '你的通道码：' + r.channelCode;
+      el.style.display = '';
+      console.log('通道码', r.channelCode);
+    }
+  });
+</script>
+
+</body>
+</html>

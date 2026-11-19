@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>push-server 通道管理 · 一封传话</title>
-<link rel="stylesheet" href="assets/style.css?v=14">
+<link rel="stylesheet" href="assets/style.css?v=15">
 </head>
 <body>
 
@@ -87,7 +87,7 @@
       <div class="video-card">
         <div class="main-video">
           <a href="javascript:;" id="videoBtn">
-            <img alt="播放" width="80" height="80" src="https://file.phprm.com/play.png">
+            <img alt="播放" width="80" height="80" src="https://api.phprm.com/file/play.png">
             <p data-i18n="video_play_text"></p>
           </a>
         </div>
@@ -97,52 +97,10 @@
     <pre id="pushResult" class="result" style="display:none"></pre>
   </section>
 
-  <!-- ============ 三方授权开通道卡片（create_auth_session / poll_auth_session） ============ -->
-  <section class="card" id="authCard">
-    <h2 data-i18n="auth_title"></h2>
-    <p class="muted" data-i18n="auth_desc"></p>
-    <div class="form-row">
-      <label for="authProvider" data-i18n="auth_provider_label"></label>
-      <select id="authProvider">
-        <!-- 静态兜底：正常运行时会被 app.js 从 tools/list 的 create_auth_session.provider 枚举动态覆盖，
-             仅在 tools/list 请求失败时保留这份 -->
-        <option value="feishu" data-i18n="provider_feishu">飞书</option>
-        <option value="dingtalk" data-i18n="provider_dingtalk">钉钉</option>
-        <option value="gitee" data-i18n="provider_gitee">Gitee</option>
-        <option value="github" data-i18n="provider_github">GitHub</option>
-        <option value="email" data-i18n="provider_email">邮箱验证码</option>
-      </select>
-    </div>
-    <!-- 仅「邮箱验证码」需要：收件邮箱（邮件授权入口通道码由 SDK 自动从 ping 列表取） -->
-    <div class="form-row" id="authEmailRow" style="display:none">
-      <label for="authEmail" data-i18n="auth_email_label"></label>
-      <input type="email" id="authEmail" autocomplete="email" data-i18n-ph="auth_email_ph">
-    </div>
-    <div class="form-row auth-actions">
-      <label></label>
-      <button class="btn btn-primary" id="authStartBtn" type="button" data-i18n="auth_start"></button>
-      <button class="btn btn-cancel" id="authCancelBtn" type="button" style="display:none" data-i18n="auth_cancel"></button>
-    </div>
-    <div id="authResult" class="auth-result" style="display:none"></div>
-  </section>
-
-  <!-- ============ 通道管理卡片 ============ -->
-  <section class="card" id="channelCard">
-    <div class="card-head">
-      <h2><span data-i18n="chan_title"></span><span class="hint" id="channelParentInfo"></span></h2>
-      <span class="card-head-btns">
-        <button class="btn btn-ghost" id="refreshBtn" type="button" data-i18n="btn_refresh"></button>
-        <button class="btn btn-primary" id="addBtn" type="button" data-i18n="btn_add"></button>
-      </span>
-    </div>
-
-    <div id="channelTableWrap">
-      <div class="placeholder" id="channelPlaceholder">
-        <p data-i18n="placeholder_no_code"></p>
-        <p class="muted" data-i18n-html="placeholder_no_code_hint"></p>
-      </div>
-    </div>
-  </section>
+  <!-- ============ 授权开通道 + 通道管理（统一由 push-sdk.js 的 mountAuthCard 提供） ============
+       有通道码 → SDK 直接渲染管理面板；无码 → SDK 渲染授权卡，授权成功后就地展开管理面板。
+       SDK 自带完整 UI 与内联样式，宿主页零依赖；app.js 只负责把授权结果同步到本页的码记忆。 -->
+  <section class="card" id="yfPortal"></section>
 
   <!-- ============ 分享：把本页网址发给正在使用 SKILL 的好友 ============ -->
   <section class="card" id="shareCard">
@@ -236,92 +194,7 @@
   </div>
 </div>
 
-<!-- ============ 新增通道弹窗 ============ -->
-<div class="modal-mask" id="addModal" style="display:none">
-  <div class="modal">
-    <button class="modal-close" type="button" data-close="addModal" title="关闭" aria-label="关闭">×</button>
-    <h3 data-i18n="add_title"></h3>
-    <div class="form-row">
-      <label data-i18n="field_name"></label>
-      <input id="addName" type="text" maxlength="50" data-i18n-ph="ph_channel_name">
-    </div>
-    <div class="form-row">
-      <label data-i18n="field_type"></label>
-      <select id="addType"></select>
-    </div>
-    <div class="form-row" id="addWebhookRow" style="display:none">
-      <label id="addWebhookLabel" data-i18n="field_webhook"></label>
-      <input id="addWebhook" type="text" placeholder="https://example.com/hook/push">
-    </div>
-    <div class="form-row" id="addSecretRow" style="display:none">
-      <label id="addSignLabel" data-i18n="field_secret"></label>
-      <input id="addSecret" type="text" data-i18n-ph="ph_secret">
-    </div>
-    <div class="form-row" id="addCorpIdRow" style="display:none">
-      <label id="addCorpLabel"></label>
-      <input id="addCorpId" type="text" autocomplete="off" placeholder="对应参数 corpId">
-    </div>
-    <div class="form-row" id="addAgentIdRow" style="display:none">
-      <label id="addAgentLabel"></label>
-      <input id="addAgentId" type="text" autocomplete="off" placeholder="对应参数 agentId">
-    </div>
-    <div class="form-row" id="addCorpSecretRow" style="display:none">
-      <label id="addSecretLabel"></label>
-      <input id="addCorpSecret" type="text" autocomplete="off" placeholder="对应参数 corpSecret">
-    </div>
-    <p class="err small" id="addErr" style="display:none"></p>
-    <p class="muted small" data-i18n="add_tip"></p>
-    <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="addModal" type="button" data-i18n="btn_cancel"></button>
-      <button class="btn btn-primary" id="addSubmit" type="button" data-i18n="btn_create"></button>
-    </div>
-  </div>
-</div>
 
-<!-- ============ 修改通道弹窗 ============ -->
-<div class="modal-mask" id="editModal" style="display:none">
-  <div class="modal">
-    <button class="modal-close" type="button" data-close="editModal" title="关闭" aria-label="关闭">×</button>
-    <h3 data-i18n="edit_title"></h3>
-    <p class="muted small" id="editTarget"></p>
-    <div class="form-row">
-      <label data-i18n="field_name"></label>
-      <input id="editName" type="text" maxlength="50">
-    </div>
-    <div class="form-row" id="editWebhookRow" style="display:none">
-      <label id="editWebhookLabel" data-i18n="field_webhook"></label>
-      <input id="editWebhook" type="text">
-    </div>
-    <div class="form-row" id="editCorpIdRow" style="display:none">
-      <label id="editCorpLabel"></label>
-      <input id="editCorpId" type="text" autocomplete="off" placeholder="对应参数 corpId">
-    </div>
-    <div class="form-row" id="editAgentIdRow" style="display:none">
-      <label id="editAgentLabel"></label>
-      <input id="editAgentId" type="text" autocomplete="off" placeholder="对应参数 agentId">
-    </div>
-    <div class="form-row" id="editCorpSecretRow" style="display:none">
-      <label id="editSecretLabel"></label>
-      <input id="editCorpSecret" type="text" autocomplete="off" placeholder="对应参数 corpSecret">
-    </div>
-    <div class="form-row" id="editSignSecretRow" style="display:none">
-      <label id="editSignLabel" data-i18n="field_secret"></label>
-      <input id="editSignSecret" type="text" autocomplete="off" placeholder="对应参数 signSecret">
-    </div>
-    <div class="form-row">
-      <label data-i18n="field_status"></label>
-      <select id="editStatus">
-        <option value="1" data-i18n="status_on"></option>
-        <option value="0" data-i18n="status_off"></option>
-      </select>
-    </div>
-    <p class="err small" id="editErr" style="display:none"></p>
-    <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="editModal" type="button" data-i18n="btn_cancel"></button>
-      <button class="btn btn-primary" id="editSubmit" type="button" data-i18n="btn_save"></button>
-    </div>
-  </div>
-</div>
 
 <!-- ============ 二维码浮层 ============ -->
 <div class="modal-mask" id="qrModal" style="display:none">
@@ -335,75 +208,8 @@
   </div>
 </div>
 
-<!-- ============ 测试推送弹窗 ============ -->
-<div class="modal-mask" id="testModal" style="display:none">
-  <div class="modal test-modal">
-    <button class="modal-close" type="button" data-close="testModal" title="关闭" aria-label="关闭">×</button>
-    <div class="modal-head-blue">
-      <span id="testTitle">测试通道</span>
-    </div>
-    <div class="modal-body-pad">
-      <div class="trow">
-        <label class="tkey">head</label>
-        <input id="testHead" type="text" data-i18n-value="default_head" data-i18n-ph="ph_head">
-      </div>
-      <div class="trow">
-        <label class="tkey">body</label>
-        <input id="testBody" type="text" data-i18n-ph="ph_body">
-      </div>
-      <div class="trow">
-        <label class="tkey">url</label>
-        <input id="testUrl" type="text" data-i18n-ph="ph_url">
-      </div>
-      <div class="trow">
-        <label class="tkey">avatar</label>
-        <input id="testAvatar" type="text" data-i18n-ph="ph_avatar">
-      </div>
-      <div class="trow">
-        <label class="tkey" data-i18n="trow_api"></label>
-        <div class="tval">
-          <div><a href="javascript:;" id="testCopyUrl" data-i18n="copy_api"></a>&nbsp;<span data-i18n="api_tip"></span></div>
-          <div class="api-url mono" id="testApiUrl"></div>
-        </div>
-      </div>
-      <div class="trow actions">
-        <label class="tkey"></label>
-        <div class="tval">
-          <button class="btn btn-primary" id="testPushBtn" type="button" data-i18n="btn_push"></button>
-          <button class="btn btn-cancel" data-close="testModal" type="button" data-i18n="btn_cancel"></button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ============ 删除确认弹窗 ============ -->
-<div class="modal-mask" id="delModal" style="display:none">
-  <div class="modal">
-    <button class="modal-close" type="button" data-close="delModal" title="关闭" aria-label="关闭">×</button>
-    <h3 data-i18n="del_title"></h3>
-    <p id="delTip" data-i18n="del_tip"></p>
-    <p class="muted small" id="delTarget"></p>
-    <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="delModal" type="button" data-i18n="btn_cancel"></button>
-      <button class="btn btn-danger" id="delSubmit" type="button" data-i18n="btn_confirm_del"></button>
-    </div>
-  </div>
-</div>
 
-<!-- ============ 重置通道弹窗 ============ -->
-<div class="modal-mask" id="resetModal" style="display:none">
-  <div class="modal">
-    <button class="modal-close" type="button" data-close="resetModal" title="关闭" aria-label="关闭">×</button>
-    <h3 data-i18n="reset_title"></h3>
-    <p id="resetTip" data-i18n="reset_tip"></p>
-    <p class="muted small" id="resetTarget"></p>
-    <div class="modal-btns">
-      <button class="btn btn-ghost" data-close="resetModal" type="button" data-i18n="btn_cancel"></button>
-      <button class="btn btn-danger" id="resetSubmit" type="button" data-i18n="btn_confirm_reset"></button>
-    </div>
-  </div>
-</div>
 
 <!-- ============ 讲解视频放大播放层（app.js 注入 video controls autoplay，× 关闭） ============ -->
 <div class="video-layer" id="videoLayer">
@@ -422,8 +228,8 @@
     s.parentNode.insertBefore(dm, s);
 })();
 </script>
-<script src="assets/push-sdk.js?v=3"></script>
-<script src="assets/app.js?v=20"></script>
+<script src="assets/push-sdk.js?v=8"></script>
+<script src="assets/app.js?v=21"></script>
 <script>
 /* 托管平台在响应末尾注入水印脚本，元素在本脚本之后才挂载，故边观察边移除；它遮住右下角弹幕图标 */
 (function () {

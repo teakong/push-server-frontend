@@ -133,6 +133,7 @@
       <a href="#why">为什么选一封传话</a>
       <a href="#start">五分钟接入</a>
       <a href="#auth">邮箱换通道码</a>
+      <a href="#panel">授权+管理一体接入</a>
       <a href="#api">API 与界面对照</a>
       <a href="#push">发送推送</a>
       <a href="#danmu">弹幕组件</a>
@@ -148,6 +149,7 @@
       <li><a href="#why">一封传话解决什么问题</a></li>
       <li><a href="#start">五分钟接入</a></li>
       <li><a href="#auth">用用户邮箱换通道码</a></li>
+      <li><a href="#panel">开箱即用：授权卡 + 通道管理面板</a></li>
       <li><a href="#api">通道管理 API 与页面功能对照</a></li>
       <li><a href="#push">发送推送消息</a></li>
       <li><a href="#faq">常见问题</a></li>
@@ -263,11 +265,7 @@
       <li><b>用户填写验证码登录</b><span>在官网页输入邮件里的验证码，完成登录。</span></li>
       <li><b>SDK 取回通道码</b><span>你轮询 <code class="inline">pushSdk.pollSession(sessionId)</code>，状态变成 <code class="inline">success</code> 时拿到该用户的通道码。</span></li>
     </ol>
-
-    <div class="note">
-      <strong>一封传话新用户和老用户的区别：</strong>邮箱属于新用户时，登录的同时会自动开通一条属于他的通道；邮箱已经注册过一封传话时，登录后返回的是他账号下已有的通道码，直接复用，不会重复开通。
-    </div>
-
+    
     <h3>4.2 最省事的方式：直接挂一张授权卡片</h3>
     <p>SDK 自带一张完整的「一键开通」卡片，包含登录方式下拉、邮箱输入、验证码引导和轮询。你只需要给一个容器：</p>
 <pre><span class="k">&lt;div</span> <span class="fn">id</span>=<span class="s">"auth-slot"</span><span class="k">&gt;&lt;/div&gt;</span>
@@ -322,6 +320,78 @@ pushSdk.createEmailSession(<span class="s">'user@example.com'</span>).then(<span
     </table>
 
     <p><strong>落地建议：</strong>在用户表里加一个 <code class="inline">push_channel_code</code> 字段。每个用户一条自己的通道码，后续停用、重置、查推送记录互不干扰。</p>
+  </section>
+
+  <section id="panel">
+    <h2><span class="no">4.5</span>开箱即用：授权卡 + 通道管理面板</h2>
+    <p class="sub">上一节讲的是「怎么拿通道码」。这一节讲的是拿到码之后，怎么让用户自己管理接收通道——这部分 SDK 也全包了，你不用写一行界面代码。</p>
+
+    <div class="note">
+      <strong>先记住一件事：</strong><code class="inline">YfPush.create()</code> 只是创建实例，<strong>不会在页面上画任何东西</strong>。要在页面上看到东西，必须再调一次 <code class="inline">mountAuthCard(容器, 选项)</code>。很多人只写了 create，结果「不报错也不显示」。
+    </div>
+
+    <h3>4.5.1 小白接入：三行代码拿到「开通道 + 管通道」整套界面</h3>
+    <p>SDK 的 <code class="inline">mountAuthCard</code> 会根据当前状态自动切换界面：用户还没有通道码时显示授权卡（登录/邮箱换码）；授权成功后，<strong>同一个容器里就地展开完整的通道管理面板</strong>，可新增、修改、删除、重置、测试、复制通道码。</p>
+<pre><span class="k">&lt;div</span> <span class="fn">id</span>=<span class="s">"yf-panel"</span><span class="k">&gt;&lt;/div&gt;</span>
+<span class="k">&lt;script</span> <span class="fn">src</span>=<span class="s">"https://push.phprm.com/static/js/push-sdk.js?v=8"</span><span class="k">&gt;&lt;/script&gt;</span>
+<span class="k">&lt;script&gt;</span>
+YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(<span class="s">'#yf-panel'</span>, {
+  onSuccess: <span class="k">function</span> (r) {
+    <span class="c">// 授权成功：把通道码存到你自己的用户资料里</span>
+    saveChannelCode(r.channelCode);
+  },
+  onCodeChanged: <span class="k">function</span> (code) {
+    <span class="c">// 用户在面板里重置了通道码：把新码同步回去</span>
+    saveChannelCode(code);
+  }
+});
+<span class="k">&lt;/script&gt;</span></pre>
+    <p class="tip">你不需要引入任何 CSS，尤其不用管官网演示页里的 <code class="inline">assets/style.css</code>——那是官网自己的界面样式，和 SDK 无关。SDK 的全部样式都以内联 <code class="inline">&lt;style&gt;</code> 注入，且选择器都带 <code class="inline">.yf-auth</code> / <code class="inline">.yf-mgr</code> / <code class="inline">.yf-portal</code> 作用域，不写 <code class="inline">body</code>、<code class="inline">html</code>、<code class="inline">:root</code>、<code class="inline">*</code>，不会污染你网站原有的样式和功能。</p>
+
+    <h3>4.5.2 用户下次再来：带码直入管理面板</h3>
+    <p>如果你已经在用户资料里存了通道码，把它通过 <code class="inline">code</code> 选项传给 SDK，用户再次打开页面就是直接进管理面板，不会重复走授权。面板里「重置通道码」后，新码会通过 <code class="inline">onCodeChanged</code> 回传给你。</p>
+<pre><span class="k">var</span> savedCode = <span class="s">'从你的数据库读出来的32位通道码'</span>;  <span class="c">// 没有就传空字符串</span>
+YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(<span class="s">'#yf-panel'</span>, {
+  code: savedCode,   <span class="c">// 有码：直接渲染管理面板；无码：渲染授权卡</span>
+  onCodeChanged: <span class="k">function</span> (code) { saveChannelCode(code); }
+});</pre>
+
+    <h3>4.5.3 管理面板里有哪些功能</h3>
+    <table>
+      <thead><tr><th>面板上的操作</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>刷新 / 列表</td><td>列出当前通道和它下面的子通道，显示类型、二维码、名称、打码头、创建时间、状态。</td></tr>
+        <tr><td>+ 新增推送通道</td><td>弹出表单，选推送类型、填通道名和对应配置；创建成功后自动复制新通道码。</td></tr>
+        <tr><td>修改</td><td>改名、改配置、启用或停用。</td></tr>
+        <tr><td>测试</td><td>发一条测试消息，确认用户能收到；支持标题、正文、网址、图标。</td></tr>
+        <tr><td>复制</td><td>一键复制该行完整通道码（列表里显示的是打码头）。</td></tr>
+        <tr><td>重置</td><td>弹确认框（显示通道名与打码头），确认后换新码、旧码立即失效；当前通道重置会通过 <code>onCodeChanged</code> 回传新码。</td></tr>
+        <tr><td>删除</td><td>弹确认框后删除子通道；当前绑定的那条不允许删。</td></tr>
+        <tr><td>二维码 / 推送记录</td><td>点列表里的二维码放大查看；点名称下方的「推送记录」看该通道的历史消息。</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.5.4 高手定制：只挑需要的能力</h3>
+    <p>如果你不想用 SDK 自带的界面和样式，也完全可以只用它的方法、界面自己画。</p>
+    <ul class="plain">
+      <li><strong>只用方法、完全自己画界面：</strong>不要调 <code class="inline">mountAuthCard</code>，只 <code class="inline">create()</code> 后调 <code class="inline">createEmailSession</code> / <code class="inline">pollSession</code> / <code class="inline">listChannels</code> 等方法。这样 SDK 一行样式都不注入。</li>
+      <li><strong>用内置逻辑、换成自己的皮肤：</strong>传 <code class="inline">injectStyle: false</code> 关掉内置样式，再传 <code class="inline">className: 'my-skin'</code> 给根节点加类名，用你自己的 CSS 覆盖。</li>
+      <li><strong>只改文案：</strong>用 <code class="inline">labels</code> 覆盖任意按钮/提示文案，<code class="inline">title</code> / <code class="inline">desc</code> 改授权卡标题和说明。</li>
+      <li><strong>接自己的业务流程：</strong>用 <code class="inline">onSuccess</code> / <code class="inline">onCodeChanged</code> / <code class="inline">onError</code> 回调把通道码、新码、错误接回你的系统。</li>
+    </ul>
+<pre>YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(<span class="s">'#slot'</span>, {
+  injectStyle: <span class="k">false</span>,            <span class="c">// 不注入 SDK 内置样式</span>
+  className: <span class="s">'my-auth-skin'</span>,     <span class="c">// 给根节点加自定义 class，方便你写 CSS</span>
+  title: <span class="s">'开通消息通知'</span>,
+  labels: { mgr_add: <span class="s">'添加接收方式'</span> },  <span class="c">// 覆盖任意文案</span>
+  onSuccess: <span class="k">function</span> (r) { console.log(r.channelCode); },
+  onCodeChanged: <span class="k">function</span> (code) { console.log(code); },
+  onError: <span class="k">function</span> (err) { console.error(err); }
+});</pre>
+    <p class="tip">SDK 会注入一个带固定 id 的 <code class="inline">&lt;style&gt;</code>；<code class="inline">destroy()</code> 只移除它挂载的面板 DOM。需要完全无样式时走「只用方法」那条路即可。</p>
+
+    <h3>4.5.5 关于版本与缓存</h3>
+    <p>示例里的 <code class="inline">push-sdk.js?v=8</code> 带了版本号，是为了让浏览器和 CDN 及时拿到更新后的文件；官方升级时把 <code class="inline">v</code> 后面的数字加大即可。</p>
   </section>
 
   <section id="api">
@@ -427,6 +497,21 @@ pushSdk.createEmailSession(<span class="s">'user@example.com'</span>).then(<span
 
   <section id="faq">
     <h2><span class="no">7</span>常见问题</h2>
+
+    <h3>照着示例接了，页面不报错但什么都不显示？</h3>
+    <p>九成是只调用了 <code class="inline">YfPush.create()</code> 而没有调 <code class="inline">mountAuthCard()</code>。create 只创建实例、不碰 DOM；必须给它一个容器，例如 <code class="inline">YfPush.create({...}).mountAuthCard('#yf-panel')</code>。</p>
+
+    <h3>授权成功拿到通道码了，但没有通道管理界面？</h3>
+    <p>先确认你用的是最新版 SDK（示例为 <code class="inline">?v=8</code>），旧版本只有授权卡没有管理面板。管理面板由 <code class="inline">mountAuthCard</code> 在授权成功后自动就地展开，不需要你另外写容器或调用方法。</p>
+
+    <h3>引入 SDK 会不会影响我网站原来的功能和样式？</h3>
+    <p>不会。你不需要引入任何 CSS，SDK 的全部样式以内联 <code class="inline">&lt;style&gt;</code> 注入，选择器全部限定在 <code class="inline">.yf-*</code> 作用域内，不修改 <code class="inline">body</code>、<code class="inline">html</code>、<code class="inline">:root</code> 或通配选择器，也不覆盖你页面的全局样式。若仍不放心，可用 <code class="inline">injectStyle: false</code> 完全关掉内置样式。</p>
+
+    <h3>官网首页引了 assets/style.css，我接入时也要引吗？</h3>
+    <p>不用。那个 <code class="inline">style.css</code> 只是官网首页（index.html）自己的页面样式，用来画顶部导航、推送测试卡这些官网界面，SDK 不依赖它。你照上面三行代码接入即可：授权卡和管理面板的样式由 SDK 自身内联注入，与 <code class="inline">style.css</code> 无任何关系，不引也不会乱。</p>
+
+    <h3>我只想用 SDK 的方法，界面和样式全部自己写，可以吗？</h3>
+    <p>可以。不要调 <code class="inline">mountAuthCard</code>，只 <code class="inline">create()</code> 后调用 <code class="inline">createEmailSession</code> / <code class="inline">pollSession</code> / <code class="inline">listChannels</code> 等方法即可，此时 SDK 不注入任何样式。若要保留内置交互逻辑只换外观，用 <code class="inline">injectStyle: false</code> + <code class="inline">className</code>。</p>
 
     <h3>用户没收到验证码邮件？</h3>
     <p>先让用户看垃圾邮件和推广邮件目录；确认邮箱拼写无误。授权会话只有 10 分钟，过期就重新调一次 <code class="inline">createEmailSession</code>。</p>
