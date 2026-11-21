@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>push-sdk.js 接入说明（站长版） - 一封传话</title>
-<meta name="description" content="站长如何用一封传话 push-sdk.js 给自己的网站用户做消息推送：场景、优势、邮箱换通道码、通道管理 API 与界面功能对照。">
+<meta name="description" content="站长如何用一封传话 push-sdk.js 给自己的网站用户做消息推送：场景、优势、自动取码、邮箱自动注册换通道码、通道管理 API 与界面功能对照。">
 <style>
   :root{
     --bg:#f6f8fa; --card:#fff; --line:#e1e4e8; --text:#1a1a2e; --text-strong:#111827;
@@ -132,6 +132,7 @@
       <a href="#scenes">适用场景</a>
       <a href="#why">为什么选一封传话</a>
       <a href="#start">五分钟接入</a>
+      <a href="#auto">自动取码</a>
       <a href="#auth">邮箱换通道码</a>
       <a href="#panel">授权+管理一体接入</a>
       <a href="#api">API 与界面对照</a>
@@ -148,7 +149,8 @@
       <li><a href="#scenes">什么场景值得给用户推送</a></li>
       <li><a href="#why">一封传话解决什么问题</a></li>
       <li><a href="#start">五分钟接入</a></li>
-      <li><a href="#auth">用用户邮箱换通道码</a></li>
+      <li><a href="#auto">自动取码：域名认证「推送管理页」免开通</a></li>
+      <li><a href="#auth">通过用户邮箱自动注册获取通道码</a></li>
       <li><a href="#panel">开箱即用：授权卡 + 通道管理面板</a></li>
       <li><a href="#api">通道管理 API 与页面功能对照</a></li>
       <li><a href="#push">发送推送消息</a></li>
@@ -208,7 +210,7 @@
         <p>提交的工单有回复、审批通过或被驳回，直接推给发起人。</p>
       </div>
       <div class="card">
-        <h4><a href="https://push-server-console-twinq8ajunq.qoder.zone/" target="_blank" rel="noopener">站点访问统计</a></h4>
+        <h4><a href="https://push.phprm.com/stat.html" target="_blank" rel="noopener">站点访问统计</a></h4>
         <p>workbuddy、Qoder 这类站点接入访问统计后，有人来访问就实时推送到手机上，不用盯着后台刷新。</p>
       </div>
     </div>
@@ -254,11 +256,30 @@
     <p class="tip">用构建工具的项目也可以直接 <code class="inline">import YfPush from './push-sdk.js'</code>，或在 Node 里 <code class="inline">require('./push-sdk.js')</code>。</p>
   </section>
 
-  <section id="auth">
-    <h2><span class="no">4</span>用用户邮箱换通道码</h2>
-    <p class="sub">你不需要让用户在你的网站注册账号，也不需要用户先来官网注册。只要拿到用户的邮箱，就能给他开一条专属推送通道。</p>
+  <section id="auto">
+    <h2><span class="no">4</span>自动取码：域名认证「推送管理页」免开通</h2>
+    <p>如果你的站点已在一封传话完成<strong><a href="https://push.phprm.com/host.html" target="_blank" rel="noopener">域名认证</a></strong>，并给每个注册用户分配了二级目录名称空间（例如 <code class="inline">https://ce.phprm.com/teakong/</code>），域名认证会为该目录自动建好一个组合通道，这个通道码站长登录一封传话官网就能看见，用户绑定的钉钉飞书企业微信群机器人也是挂在站长名下。用户首次进入你的「推送管理页」时，调一次 <code class="inline">autoGetChannelCode</code> 就能把这个组合通道码自动取回并存好，无需用户手动开通、填码。</p>
+<pre>YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).autoGetChannelCode({
+  referer: <span class="s">'https://ce.phprm.com/teakong/'</span>,   <span class="c">// 该用户的名称空间，必传，但不需要真的存在</span>
+  onSuccess: <span class="k">function</span> (code) { console.log(<span class="s">'组合通道码'</span>, code); },
+  onError: <span class="k">function</span> (err) { console.error(err); }   <span class="c">// 失败时引导用户自行开通</span>
+}).then(<span class="k">function</span> (code) {
+  <span class="c">// code 即组合通道码；默认已写入 localStorage 的 phprm_channel_code 或者存入数据库中用户表的 channel_code 字段</span>
+});</pre>
+    <ul class="plain">
+      <li><strong>内部三步：</strong>先用 <code class="inline">referer</code> 请求 <code class="inline">getDataInfo</code> 拿子通道码，再走 MCP <code class="inline">get_access_token</code> 换令牌，最后 <code class="inline">channel/list</code> 取顶层组合通道码。</li>
+      <li><strong>自动存储：</strong>成功后把组合通道码写入 <code class="inline">localStorage</code>（key 默认 <code class="inline">phprm_channel_code</code>，可用 <code class="inline">storageKey</code> 改；传 <code class="inline">skipStorage: true</code> 则只返回不存）。</li>
+      <li><strong>失败即放弃：</strong>任一步出错都会 reject（并触发 <code class="inline">onError</code>），不做任何补偿；这时可引导用户自己去开通。</li>
+      <li><strong>签名头自动生成：</strong>内置 MD5，按官方算法 <code class="inline">sign = md5(时间戳 + "#" + apiKey + "#" + nonce)</code> 实时生成 <code class="inline">apinonce</code> / <code class="inline">apisign</code> / <code class="inline">apitimestamp</code>，无需外部 md5.js。默认 <code class="inline">apiKey=amvk2ag1hwfswq</code>，可用 <code class="inline">apiKey</code> / <code class="inline">nonce</code> / <code class="inline">timestamp</code> 或 <code class="inline">headers</code> 覆盖。</li>
+    </ul>
+    <p class="tip">这个方法只取码、不开通：名称空间未做<a href="https://push.phprm.com/host.html" target="_blank" rel="noopener">域名认证</a>时会直接失败，不会替用户创建通道。站长需先在一封传话官网完成域名认证，无需真的存在访问链接就可以使用 <code class="inline">autoGetChannelCode</code>。如果站长不想认证域名，可以看后面的步骤。</p>
+  </section>
 
-    <h3>4.1 用户会经历什么</h3>
+  <section id="auth">
+    <h2><span class="no">5</span>通过用户邮箱自动注册获取通道码</h2>
+    <p class="sub">你不需要让用户在你的网站注册填表单，也不需要用户先来官网注册。只要拿到用户的邮箱，就能给他开一条专属推送通道。</p>
+
+    <h3>5.1 用户会经历什么</h3>
     <ol class="steps">
       <li><b>你发起授权会话</b><span>调用 <code class="inline">pushSdk.createEmailSession(email)</code>，得到一个 10 分钟内有效的授权链接。</span></li>
       <li><b>用户打开链接</b><span>页面会显示收件邮箱，一封验证码邮件随之发出。</span></li>
@@ -266,7 +287,7 @@
       <li><b>SDK 取回通道码</b><span>你轮询 <code class="inline">pushSdk.pollSession(sessionId)</code>，状态变成 <code class="inline">success</code> 时拿到该用户的通道码。</span></li>
     </ol>
     
-    <h3>4.2 最省事的方式：直接挂一张授权卡片</h3>
+    <h3>5.2 最省事的方式：直接挂一张授权卡片</h3>
     <p>SDK 自带一张完整的「一键开通」卡片，包含登录方式下拉、邮箱输入、验证码引导和轮询。你只需要给一个容器：</p>
 <pre><span class="k">&lt;div</span> <span class="fn">id</span>=<span class="s">"auth-slot"</span><span class="k">&gt;&lt;/div&gt;</span>
 
@@ -287,7 +308,7 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
 <span class="k">&lt;/script&gt;</span></pre>
     <p class="tip">卡片会自己从服务端读取当前支持的登录方式（飞书、钉钉、Gitee、GitHub、邮箱验证码），官方新增登录方式时你不用改代码。</p>
 
-    <h3>4.3 想自己画界面：手动两步</h3>
+    <h3>5.3 想自己画界面：手动两步</h3>
 <pre><span class="k">var</span> pushSdk = YfPush.create({ mcpSource: <span class="s">'my-website'</span> });
 
 <span class="c">// 1. 用邮箱创建授权会话</span>
@@ -323,14 +344,14 @@ pushSdk.createEmailSession(<span class="s">'user@example.com'</span>).then(<span
   </section>
 
   <section id="panel">
-    <h2><span class="no">4.5</span>开箱即用：授权卡 + 通道管理面板</h2>
+    <h2><span class="no">5.5</span>开箱即用：授权卡 + 通道管理面板</h2>
     <p class="sub">上一节讲的是「怎么拿通道码」。这一节讲的是拿到码之后，怎么让用户自己管理接收通道——这部分 SDK 也全包了，你不用写一行界面代码。</p>
 
     <div class="note">
       <strong>先记住一件事：</strong><code class="inline">YfPush.create()</code> 只是创建实例，<strong>不会在页面上画任何东西</strong>。要在页面上看到东西，必须再调一次 <code class="inline">mountAuthCard(容器, 选项)</code>。很多人只写了 create，结果「不报错也不显示」。
     </div>
 
-    <h3>4.5.1 小白接入：三行代码拿到「开通道 + 管通道」整套界面</h3>
+    <h3>5.5.1 小白接入：三行代码拿到「开通道 + 管通道」整套界面</h3>
     <p>SDK 的 <code class="inline">mountAuthCard</code> 会根据当前状态自动切换界面：用户还没有通道码时显示授权卡（登录/邮箱换码）；授权成功后，<strong>同一个容器里就地展开完整的通道管理面板</strong>，可新增、修改、删除、重置、测试、复制通道码。</p>
 <pre><span class="k">&lt;div</span> <span class="fn">id</span>=<span class="s">"yf-panel"</span><span class="k">&gt;&lt;/div&gt;</span>
 <span class="k">&lt;script</span> <span class="fn">src</span>=<span class="s">"https://push.phprm.com/static/js/push-sdk.js?v=8"</span><span class="k">&gt;&lt;/script&gt;</span>
@@ -348,7 +369,7 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
 <span class="k">&lt;/script&gt;</span></pre>
     <p class="tip">你不需要引入任何 CSS，尤其不用管官网演示页里的 <code class="inline">assets/style.css</code>——那是官网自己的界面样式，和 SDK 无关。SDK 的全部样式都以内联 <code class="inline">&lt;style&gt;</code> 注入，且选择器都带 <code class="inline">.yf-auth</code> / <code class="inline">.yf-mgr</code> / <code class="inline">.yf-portal</code> 作用域，不写 <code class="inline">body</code>、<code class="inline">html</code>、<code class="inline">:root</code>、<code class="inline">*</code>，不会污染你网站原有的样式和功能。</p>
 
-    <h3>4.5.2 用户下次再来：带码直入管理面板</h3>
+    <h3>5.5.2 用户下次再来：带码直入管理面板</h3>
     <p>如果你已经在用户资料里存了通道码，把它通过 <code class="inline">code</code> 选项传给 SDK，用户再次打开页面就是直接进管理面板，不会重复走授权。面板里「重置通道码」后，新码会通过 <code class="inline">onCodeChanged</code> 回传给你。</p>
 <pre><span class="k">var</span> savedCode = <span class="s">'从你的数据库读出来的32位通道码'</span>;  <span class="c">// 没有就传空字符串</span>
 YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(<span class="s">'#yf-panel'</span>, {
@@ -356,7 +377,7 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
   onCodeChanged: <span class="k">function</span> (code) { saveChannelCode(code); }
 });</pre>
 
-    <h3>4.5.3 管理面板里有哪些功能</h3>
+    <h3>5.5.3 管理面板里有哪些功能</h3>
     <table>
       <thead><tr><th>面板上的操作</th><th>说明</th></tr></thead>
       <tbody>
@@ -371,7 +392,7 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
       </tbody>
     </table>
 
-    <h3>4.5.4 高手定制：只挑需要的能力</h3>
+    <h3>5.5.4 高手定制：只挑需要的能力</h3>
     <p>如果你不想用 SDK 自带的界面和样式，也完全可以只用它的方法、界面自己画。</p>
     <ul class="plain">
       <li><strong>只用方法、完全自己画界面：</strong>不要调 <code class="inline">mountAuthCard</code>，只 <code class="inline">create()</code> 后调 <code class="inline">createEmailSession</code> / <code class="inline">pollSession</code> / <code class="inline">listChannels</code> 等方法。这样 SDK 一行样式都不注入。</li>
@@ -390,12 +411,12 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
 });</pre>
     <p class="tip">SDK 会注入一个带固定 id 的 <code class="inline">&lt;style&gt;</code>；<code class="inline">destroy()</code> 只移除它挂载的面板 DOM。需要完全无样式时走「只用方法」那条路即可。</p>
 
-    <h3>4.5.5 关于版本与缓存</h3>
+    <h3>5.5.5 关于版本与缓存</h3>
     <p>示例里的 <code class="inline">push-sdk.js?v=8</code> 带了版本号，是为了让浏览器和 CDN 及时拿到更新后的文件；官方升级时把 <code class="inline">v</code> 后面的数字加大即可。</p>
   </section>
 
   <section id="api">
-    <h2><span class="no">5</span>通道管理 API 与页面功能对照</h2>
+    <h2><span class="no">6</span>通道管理 API 与页面功能对照</h2>
     <p class="sub">后面这套接口，和你在 <a href="https://push.phprm.com/message/share.html" target="_blank" rel="noopener">一封传话分享页</a> 上看到的按钮一一对应。就算你不写代码，也可以先在那页面上点一遍，理解每条通道在管什么。</p>
 
     <table>
@@ -462,7 +483,7 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
   </section>
 
   <section id="push">
-    <h2><span class="no">6</span>发送推送消息</h2>
+    <h2><span class="no">7</span>发送推送消息</h2>
     <p class="sub">拿到通道码后，发一条推送只需要请求一个网址：把 head、body、url、avatar 带上即可。</p>
 
     <h3>6.1 最简单的方式：一个网址就是一次推送</h3>
@@ -492,11 +513,12 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
       <li>组合通道码能触达所有子通道，只放在服务端；前端只使用当前用户自己的子通道码。</li>
       <li>怀疑泄露时调用 <code class="inline">resetChannel</code> 换码，旧码立即失效。</li>
       <li>给每个用户单独开子通道，停用、重置、查记录都互不影响。</li>
+      <li>集成 SDK 后通过 <code class="inline">autoGetChannelCode</code> 自动分配通道码的，不建议再集成访问统计，因为访问统计的通道码可以反查网站用户，可能会绑定他的钉钉、飞书、企业微信群机器人配置。</li>
     </ul>
   </section>
 
   <section id="faq">
-    <h2><span class="no">7</span>常见问题</h2>
+    <h2><span class="no">8</span>常见问题</h2>
 
     <h3>照着示例接了，页面不报错但什么都不显示？</h3>
     <p>九成是只调用了 <code class="inline">YfPush.create()</code> 而没有调 <code class="inline">mountAuthCard()</code>。create 只创建实例、不碰 DOM；必须给它一个容器，例如 <code class="inline">YfPush.create({...}).mountAuthCard('#yf-panel')</code>。</p>
@@ -533,7 +555,7 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
   </section>
 
   <section id="danmu">
-    <h2><span class="no">8</span>相关开源项目：AI 弹幕组件</h2>
+    <h2><span class="no">9</span>相关开源项目：AI 弹幕组件</h2>
     <p class="sub">同一作者开源的 <a href="https://github.com/teakong/danmu" target="_blank" rel="noopener">teakong/danmu</a>，把实时弹幕接进任意网站。它复用的就是本页介绍的推送通道：一条弹幕就是一条推送消息，页面通过 WebSocket 实时收到并渲染。</p>
 
     <ul class="plain">
@@ -553,7 +575,7 @@ YfPush.create({ mcpSource: <span class="s">'my-website'</span> }).mountAuthCard(
   </section>
 
   <section id="skill">
-    <h2><span class="no">9</span>SKILL 集成：让 AI 助手会推送</h2>
+    <h2><span class="no">10</span>SKILL 集成：让 AI 助手会推送</h2>
     <p class="sub">官方开源的 Agent Skill <a href="https://github.com/teakong/push-server" target="_blank" rel="noopener">teakong/push-server</a>，把「任务完成后推一条通知」变成 AI 助手的默认动作。纯 MCP 调用，不需要脚本或任何运行时依赖，Trae、Claude、Cursor、Workbuddy 等客户端都适用。</p>
 
     <ul class="plain">

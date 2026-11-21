@@ -38,6 +38,11 @@
  *   A. 只使用方法、UI 全自定义：完全不要调 mountAuthCard，直接用 create() 返回的
  *      listChannels / addChannel / editChannel / deleteChannel / resetChannel /
  *      sendPushMessage / createAuthSession / pollSession 等方法自己渲染，SDK 此时不注入任何样式。
+ *
+ *   自动取码（访问统计推送管理页）：
+ *     sdk.autoGetChannelCode({ referer: 'https://ce.phprm.com/teakong/' }).then(function (code) {});
+ *   依次请求 getDataInfo -> MCP get_access_token -> channel/list，取回组合通道码并存 localStorage；
+ *   任一步失败即 reject，业务方可引导用户自行开通。
  *   B. 用内置逻辑、换自己的皮：mountAuthCard 传 opt.injectStyle=false 关掉内置样式，
  *      再用 opt.className 给根节点加自定义 class，由你自己的 CSS 按 .yf-* 结构改写；
  *      opt.labels 可改全部文案，opt.title / opt.desc 改标题描述，opt.providers 改登录方式名。
@@ -166,6 +171,82 @@
     };
 
     var P = typeof Promise === 'function' ? Promise : MiniPromise;
+
+    /* 轻量 MD5（RFC 1321，纯 ES5，零依赖）；仅用于生成访问统计接口的 apiSign */
+    var md5Hex = (function () {
+        function safeAdd(x, y) {
+            var lsw = (x & 0xffff) + (y & 0xffff);
+            var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+            return (msw << 16) | (lsw & 0xffff);
+        }
+        function rotl(num, cnt) { return (num << cnt) | (num >>> (32 - cnt)); }
+        function cmn(q, a, b, x, s, t) { return safeAdd(rotl(safeAdd(safeAdd(a, q), safeAdd(x, t)), s), b); }
+        function ff(a, b, c, d, x, s, t) { return cmn((b & c) | ((~b) & d), a, b, x, s, t); }
+        function gg(a, b, c, d, x, s, t) { return cmn((b & d) | (c & (~d)), a, b, x, s, t); }
+        function hh(a, b, c, d, x, s, t) { return cmn(b ^ c ^ d, a, b, x, s, t); }
+        function ii(a, b, c, d, x, s, t) { return cmn(c ^ (b | (~d)), a, b, x, s, t); }
+        function toHexWords(w) {
+            var s = '';
+            for (var i = 0; i < 4; i++) {
+                var b = (w >>> (i * 8)) & 0xff;
+                s += (b < 16 ? '0' : '') + b.toString(16);
+            }
+            return s;
+        }
+        function utf8Bytes(str) {
+            var out = '';
+            for (var i = 0; i < str.length; i++) {
+                var c = str.charCodeAt(i);
+                if (c < 0x80) { out += String.fromCharCode(c); }
+                else if (c < 0x800) {
+                    out += String.fromCharCode(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+                } else if (c < 0xd800 || c >= 0xe000) {
+                    out += String.fromCharCode(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+                } else {
+                    i++;
+                    var c2 = str.charCodeAt(i);
+                    var cp = 0x10000 + (((c & 0x3ff) << 10) | (c2 & 0x3ff));
+                    out += String.fromCharCode(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 0x3f), 0x80 | ((cp >> 6) & 0x3f), 0x80 | (cp & 0x3f));
+                }
+            }
+            return out;
+        }
+        return function (input) {
+            var s = utf8Bytes(String(input));
+            var len = s.length;
+            var words = (((len + 8) >> 6) + 1) * 16;
+            var x = [];
+            for (var i = 0; i < words; i++) { x[i] = 0; }
+            for (i = 0; i < len; i++) { x[i >> 2] |= s.charCodeAt(i) << ((i % 4) * 8); }
+            x[len >> 2] |= 0x80 << ((len % 4) * 8);
+            var bits = len * 8;
+            x[words - 2] = bits >>> 0;
+            x[words - 1] = Math.floor(bits / 4294967296);
+            var a = 0x67452301, b = 0xefcdab89, c = 0x98badcfe, d = 0x10325476;
+            for (var j = 0; j < words; j += 16) {
+                var oa = a, ob = b, oc = c, od = d;
+                a = ff(a,b,c,d,x[j],7,0xd76aa478); d = ff(d,a,b,c,x[j+1],12,0xe8c7b756); c = ff(c,d,a,b,x[j+2],17,0x242070db); b = ff(b,c,d,a,x[j+3],22,0xc1bdceee);
+                a = ff(a,b,c,d,x[j+4],7,0xf57c0faf); d = ff(d,a,b,c,x[j+5],12,0x4787c62a); c = ff(c,d,a,b,x[j+6],17,0xa8304613); b = ff(b,c,d,a,x[j+7],22,0xfd469501);
+                a = ff(a,b,c,d,x[j+8],7,0x698098d8); d = ff(d,a,b,c,x[j+9],12,0x8b44f7af); c = ff(c,d,a,b,x[j+10],17,0xffff5bb1); b = ff(b,c,d,a,x[j+11],22,0x895cd7be);
+                a = ff(a,b,c,d,x[j+12],7,0x6b901122); d = ff(d,a,b,c,x[j+13],12,0xfd987193); c = ff(c,d,a,b,x[j+14],17,0xa679438e); b = ff(b,c,d,a,x[j+15],22,0x49b40821);
+                a = gg(a,b,c,d,x[j+1],5,0xf61e2562); d = gg(d,a,b,c,x[j+6],9,0xc040b340); c = gg(c,d,a,b,x[j+11],14,0x265e5a51); b = gg(b,c,d,a,x[j],20,0xe9b6c7aa);
+                a = gg(a,b,c,d,x[j+5],5,0xd62f105d); d = gg(d,a,b,c,x[j+10],9,0x02441453); c = gg(c,d,a,b,x[j+15],14,0xd8a1e681); b = gg(b,c,d,a,x[j+4],20,0xe7d3fbc8);
+                a = gg(a,b,c,d,x[j+9],5,0x21e1cde6); d = gg(d,a,b,c,x[j+14],9,0xc33707d6); c = gg(c,d,a,b,x[j+3],14,0xf4d50d87); b = gg(b,c,d,a,x[j+8],20,0x455a14ed);
+                a = gg(a,b,c,d,x[j+13],5,0xa9e3e905); d = gg(d,a,b,c,x[j+2],9,0xfcefa3f8); c = gg(c,d,a,b,x[j+7],14,0x676f02d9); b = gg(b,c,d,a,x[j+12],20,0x8d2a4c8a);
+                a = hh(a,b,c,d,x[j+5],4,0xfffa3942); d = hh(d,a,b,c,x[j+8],11,0x8771f681); c = hh(c,d,a,b,x[j+11],16,0x6d9d6122); b = hh(b,c,d,a,x[j+14],23,0xfde5380c);
+                a = hh(a,b,c,d,x[j+1],4,0xa4beea44); d = hh(d,a,b,c,x[j+4],11,0x4bdecfa9); c = hh(c,d,a,b,x[j+7],16,0xf6bb4b60); b = hh(b,c,d,a,x[j+10],23,0xbebfbc70);
+                a = hh(a,b,c,d,x[j+13],4,0x289b7ec6); d = hh(d,a,b,c,x[j],11,0xeaa127fa); c = hh(c,d,a,b,x[j+3],16,0xd4ef3085); b = hh(b,c,d,a,x[j+6],23,0x04881d05);
+                a = hh(a,b,c,d,x[j+9],4,0xd9d4d039); d = hh(d,a,b,c,x[j+12],11,0xe6db99e5); c = hh(c,d,a,b,x[j+15],16,0x1fa27cf8); b = hh(b,c,d,a,x[j+2],23,0xc4ac5665);
+                a = ii(a,b,c,d,x[j],6,0xf4292244); d = ii(d,a,b,c,x[j+7],10,0x432aff97); c = ii(c,d,a,b,x[j+14],15,0xab9423a7); b = ii(b,c,d,a,x[j+5],21,0xfc93a039);
+                a = ii(a,b,c,d,x[j+12],6,0x655b59c3); d = ii(d,a,b,c,x[j+3],10,0x8f0ccc92); c = ii(c,d,a,b,x[j+10],15,0xffeff47d); b = ii(b,c,d,a,x[j+1],21,0x85845dd1);
+                a = ii(a,b,c,d,x[j+8],6,0x6fa87e4f); d = ii(d,a,b,c,x[j+15],10,0xfe2ce6e0); c = ii(c,d,a,b,x[j+6],15,0xa3014314); b = ii(b,c,d,a,x[j+13],21,0x4e0811a1);
+                a = ii(a,b,c,d,x[j+4],6,0xf7537e82); d = ii(d,a,b,c,x[j+11],10,0xbd3af235); c = ii(c,d,a,b,x[j+2],15,0x2ad7d2bb); b = ii(b,c,d,a,x[j+9],21,0xeb86d391);
+                a = safeAdd(a, oa); b = safeAdd(b, ob); c = safeAdd(c, oc); d = safeAdd(d, od);
+            }
+            return toHexWords(a) + toHexWords(b) + toHexWords(c) + toHexWords(d);
+        };
+    })();
+
 
     /* ---------------- 通用工具 ---------------- */
 
@@ -474,7 +555,7 @@
         '.yf-mgr-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;}',
         '.yf-mgr-head h4{margin:0;font-size:15px;font-weight:600;color:#222;flex:1 1 auto;}',
         '.yf-mgr-tip{margin:0 0 10px;font-size:12px;color:#999;line-height:1.6;}',
-        '.yf-mgr-mini{height:28px;padding:0 10px;border:1px solid #d9dde3;border-radius:4px;background:#fff;color:#555;font-size:12px;line-height:26px;cursor:pointer;font-family:inherit;}',
+        '.yf-mgr-mini{height:28px;padding:0 10px;border:1px solid #d9dde3;border-radius:4px;background:#fff;color:#555;font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;}',
         '.yf-mgr-mini-primary{background:#0ea5e9;border-color:#0ea5e9;color:#fff;}',
         '.yf-mgr-mini-primary:hover{background:#0284c7;border-color:#0284c7;}',
         '.yf-mgr-mini:disabled{opacity:.6;cursor:default;}',
@@ -501,7 +582,7 @@
         '.yf-mgr-table th{color:#8a95a3;font-weight:500;background:#fafbfc;}',
         '.yf-mgr-table tr:last-child td{border-bottom:none;}',
         '.yf-mgr-table .c-type{width:74px;}.yf-mgr-table .c-qr{width:48px;}.yf-mgr-table .c-code{width:110px;}.yf-mgr-table .c-time{width:92px;}.yf-mgr-table .c-op{width:150px;}',
-        '.yf-mgr-table.chan th.col-name,.yf-mgr-table.chan td.col-name{width:150px;min-width:0;text-align:center;}',
+        '.yf-mgr-table.chan th.col-name,.yf-mgr-table.chan td.col-name{width:150px;min-width:0;text-align:center;white-space:normal;word-break:break-all;}',
         '.yf-mgr-qr{width:36px;height:36px;border:1px solid #e6eaef;border-radius:3px;cursor:zoom-in;}',
         '.yf-mgr-badge{display:inline-block;margin:2px 3px 0 0;padding:1px 6px;border-radius:10px;background:#eef7f2;color:#0284c7;font-size:11px;}',
         '.yf-mgr-badge-off{background:#fdecec;color:#c0392b;}',
@@ -894,6 +975,125 @@
         function listChannels(code) {
             return request(code, '/oauth2/push/channel/list', null, false).then(function (data) {
                 return data || {};
+            });
+        }
+
+        /**
+         * 访问统计「推送管理页」自动取组合通道码（新用户首次进入时调用一次即可）
+         *
+         * 场景：业务站给每个注册用户分配了二级目录名称空间（如 https://ce.phprm.com/teakong/），
+         * 且已接入一封传话访问统计；访问统计会为该目录自动建好一个组合通道，
+         * 本方法把它的通道码自动取回来并存入 localStorage，免去用户手动开通 / 填码。
+         *
+         * 链路（任一步失败即放弃，不做补偿，业务方可引导用户自己去开通）：
+         *   1) GET /push/h5/app/api/getDataInfo?type=checkUrlChannelCode&appKey=pushBookmark&referer=<名称空间>&title=...&_t=...
+         *      -> data.channelCode（子通道码，仅用于换令牌）
+         *   2) MCP get_access_token（复用 accessToken）
+         *   3) GET /oauth2/push/channel/list（复用 listChannels）
+         *      -> data.channelCode（组合通道码，最终要存的）
+         *   4) 存 localStorage + onSuccess 回调 + resolve 组合通道码
+         *
+         * @param {Object} options
+         *   - referer {string} 必填，业务用户名称空间（如 https://ce.phprm.com/teakong/），作为 getDataInfo 的 referer 参数
+         *   - title {string} 可选，getDataInfo 的 title 参数
+         *   - timestamp {string|number} 可选，_t 与 apitimestamp，默认当前时间戳
+         *   - apiKey {string} 可选，签名密钥，默认 amvk2ag1hwfswq
+         *   - nonce {string} 可选，apinonce，默认 md5(Math.random())
+         *   - headers {Object} 可选，覆盖/追加 getDataInfo 请求头（签名头自动生成，可被覆盖）
+         *   - dataApi {string} 可选，getDataInfo 接口地址，默认 apiBase + /push/h5/app/api/getDataInfo
+         *   - storageKey {string} 可选，localStorage key，默认 phprm_channel_code
+         *   - skipStorage {boolean} 可选，true = 只返回码不写 localStorage
+         *   - onSuccess {Function} 可选，成功回调 (comboCode, detail)=>{}
+         *   - onError {Function} 可选，失败回调 (err)=>{}
+         * @returns {Promise<string>} resolve 组合通道码；任一步失败 reject
+         */
+        function autoGetChannelCode(options) {
+            options = options || {};
+            var onSuccess = typeof options.onSuccess === 'function' ? options.onSuccess : null;
+            var onError = typeof options.onError === 'function' ? options.onError : null;
+
+            return P.resolve().then(function () {
+                var referer = String(options.referer || '').replace(/^\s+|\s+$/g, '');
+                if (referer === '') {
+                    throw new Error('autoGetChannelCode 缺少 referer（业务用户名称空间，如 https://ce.phprm.com/teakong/）');
+                }
+                var dataApi = String(options.dataApi || (apiBase + '/push/h5/app/api/getDataInfo'));
+                var title = options.title != null ? String(options.title) : '你的性格与哪座城市最匹配 - 测什么';
+                // 访问统计接口签名：nonce = md5(random)，sign = md5(ts#apiKey#nonce)
+                // （算法见 push-front 的 email_login.html / config.js，已用抓包值反推验证）
+                var apiKey = String(options.apiKey || 'amvk2ag1hwfswq');
+                var timestamp = options.timestamp != null ? String(options.timestamp) : String(Date.now());
+                var apiNonce = options.nonce != null ? String(options.nonce) : md5Hex(String(Math.random()));
+                var apiSign = md5Hex(timestamp + '#' + apiKey + '#' + apiNonce);
+                var storageKey = String(options.storageKey || 'phprm_channel_code');
+                var skipStorage = !!options.skipStorage;
+
+                var query = encodeParams({
+                    type: 'checkUrlChannelCode',
+                    appKey: 'pushFront',
+                    referer: referer,
+                    title: title,
+                    _t: timestamp
+                });
+                var headers = {
+                    'Accept': 'application/json, text/javascript, */*; q=0.01',
+                    'Accept-Language': 'zh-CN,zh;q=0.9',
+                    'apinonce': apiNonce,
+                    'apisign': apiSign,
+                    'apitimestamp': timestamp
+                };
+                if (options.headers) {
+                    for (var hk in options.headers) {
+                        if (Object.prototype.hasOwnProperty.call(options.headers, hk)) {
+                            headers[hk] = options.headers[hk];
+                        }
+                    }
+                }
+
+                // 第一步：getDataInfo 拿子通道码
+                return http(dataApi + (dataApi.indexOf('?') >= 0 ? '&' : '?') + query, {
+                    method: 'GET', headers: headers
+                }).then(function (resp) {
+                    if (!resp.ok) { throw new Error('查询通道码失败（HTTP ' + resp.status + '）'); }
+                    return resp.text();
+                }).then(function (text) {
+                    var json = parseJsonSafe(text);
+                    if (Number(json.code) !== 0) {
+                        throw new Error(json.message || ('查询通道码失败（code=' + json.code + '）'));
+                    }
+                    var childCode = json && json.data && json.data.channelCode;
+                    if (!isChannelCode(childCode)) {
+                        throw new Error('该名称空间尚未开通访问统计通道（referer=' + referer + '）');
+                    }
+                    return String(childCode).toLowerCase();
+                }).then(function (childCode) {
+                    // 第二、三步：子通道码换令牌 + 拉列表，顶层 channelCode 即组合通道码
+                    return listChannels(childCode).then(function (list) {
+                        var comboCode = list && list.channelCode;
+                        if (!isChannelCode(comboCode)) {
+                            throw new Error('通道列表未返回合法组合通道码');
+                        }
+                        return { comboCode: String(comboCode).toLowerCase(), childCode: childCode, list: list };
+                    });
+                }).then(function (detail) {
+                    // 第四步：存 localStorage（存储失败不影响返回）+ 回调
+                    if (!skipStorage && storageKey) {
+                        try {
+                            if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.setItem === 'function') {
+                                localStorage.setItem(storageKey, detail.comboCode);
+                            }
+                        } catch (e) {}
+                    }
+                    if (onSuccess) {
+                        try { onSuccess(detail.comboCode, detail); } catch (e2) {}
+                    }
+                    return detail.comboCode;
+                });
+            })['catch'](function (err) {
+                if (onError) {
+                    try { onError(err); } catch (e) {}
+                }
+                throw err;
             });
         }
 
@@ -1654,6 +1854,7 @@
             forgetToken: forgetToken,
             request: request,
             listChannels: listChannels,
+            autoGetChannelCode: autoGetChannelCode,
             addChannel: addChannel,
             editChannel: editChannel,
             deleteChannel: deleteChannel,

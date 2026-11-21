@@ -12,6 +12,18 @@
   不会改动你网站原有的样式和功能（详见 push-sdk.js 头部注释）。
 -->
 <link rel="stylesheet" href="assets/style.css?v=14">
+<style>
+  /* 自动取码演示：名称空间输入框，统一页面表单控件风格 */
+  #autoNs {
+    flex: 1; min-width: 240px;
+    border: 1px solid #e0e4ea; border-radius: 6px;
+    padding: 7px 11px; font-size: 15px; line-height: 1.6;
+    color: #333; background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  #autoNs:focus { outline: none; border-color: #4eb389; box-shadow: 0 0 0 3px rgba(78, 179, 137, .15); }
+  #autoNs::placeholder { color: #aaa; }
+</style>
 </head>
 <body>
 
@@ -35,11 +47,25 @@
 
   <p class="muted small">提示：通道管理面板在<b>授权成功之后</b>会出现在上方卡片里，可以直接新增 / 修改 / 删除子通道、换码、测试推送，无需登录。</p>
 
+  <!-- 自动取码演示：域名认证「推送管理页」场景，用户首次进入时按名称空间自动取组合通道码 -->
+  <section class="card" style="margin-top:16px">
+    <div class="card-head"><h2>自动取码演示（域名认证推送管理页）</h2></div>
+    <p class="muted small">填入已接入<a href="https://push.phprm.com/host.html" target="_blank" rel="noopener">域名认证</a>的用户名称空间，模拟其首次进入推送管理页时自动获取组合通道码。取到后会存入 localStorage 的 <code>phprm_channel_code</code>。</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+      <input id="autoNs" type="text" value="https://ce.phprm.com/teakong/" placeholder="用户名称空间，如 https://ce.phprm.com/teakong/">
+      <button class="btn btn-primary" id="autoGetBtn" type="button">自动获取通道码</button>
+    </div>
+    <p id="autoResult" class="muted small" style="margin-top:12px;display:none"></p>
+    <!-- 取到组合通道码后，在这里直接挂 SDK 的通道管理面板（与授权成功后那块一致） -->
+    <div id="autoMgrSlot" style="margin-top:14px"></div>
+  </section>
+
 </main>
 
 <script src="assets/push-sdk.js?v=8"></script>
 <script>
-  YfPush.create({ mcpSource: 'my-test-page' }).mountAuthCard('#auth-slot', {
+  var sdk = YfPush.create({ mcpSource: 'my-test-page' });
+  sdk.mountAuthCard('#auth-slot', {
     title: '',
     onSuccess: function (r) {
       var el = document.getElementById('result');
@@ -48,6 +74,47 @@
       console.log('通道码', r.channelCode);
     }
   });
+
+  // 自动取码演示：按名称空间自动取回组合通道码
+  var autoGetBtn = document.getElementById('autoGetBtn');
+  var autoMgrHandle = null; // 已挂载的管理面板句柄，重复取码时先销毁旧的
+  if (autoGetBtn) {
+    autoGetBtn.addEventListener('click', function () {
+      var ns = document.getElementById('autoNs').value.trim();
+      var out = document.getElementById('autoResult');
+      out.style.display = '';
+      out.textContent = '正在获取…';
+      sdk.autoGetChannelCode({
+        referer: ns,
+        onSuccess: function (code) { console.log('自动取到组合通道码', code); },
+        onError: function (err) { console.error('自动取码失败', err); }
+      }).then(function (code) {
+        out.textContent = '自动取到组合通道码：' + code + '（已存入 localStorage）';
+        // 拿到码后直接挂出通道管理面板：传 code 走「有码直入」分支，跳过授权卡，
+        // 与上方授权成功后那块完全一致，可新增 / 修改 / 删除子通道、换码、测试推送。
+        var slot = document.getElementById('autoMgrSlot');
+        if (slot) {
+          if (autoMgrHandle && typeof autoMgrHandle.destroy === 'function') { autoMgrHandle.destroy(); }
+          slot.innerHTML = '';
+          autoMgrHandle = sdk.mountAuthCard(slot, {
+            code: code,
+            onCodeChanged: function (newCode) {
+              // 面板里换码后同步回 localStorage，保持与自动取码一致
+              try { localStorage.setItem('phprm_channel_code', newCode); } catch (e) {}
+              out.textContent = '已切换到通道码：' + newCode;
+            }
+          });
+        }
+      })['catch'](function (err) {
+        out.textContent = '获取失败：' + (err && err.message ? err.message : err) + '。该名称空间可能未做域名认证，可改用上方授权卡自行开通。';
+        // 失败时清掉旧面板，避免展示上一次的码造成误会
+        if (autoMgrHandle && typeof autoMgrHandle.destroy === 'function') { autoMgrHandle.destroy(); }
+        autoMgrHandle = null;
+        var slot = document.getElementById('autoMgrSlot');
+        if (slot) { slot.innerHTML = ''; }
+      });
+    });
+  }
 </script>
 
 </body>

@@ -74,6 +74,18 @@ sdk.listChannels().then(function (list) { /* 通道列表 */ });
 
 主要方法：`listTools`、`listChannels`、`addChannel`、`editChannel`、`deleteChannel`、`resetChannel`、`sendPushMessage`、`createAuthSession`、`pollSession`。
 
+**自动取码（访问统计「推送管理页」）：** 已接入访问统计、且给用户分配了二级目录名称空间的站点，用户首次进入推送管理页时可调用 `autoGetChannelCode`，自动取回该目录对应的组合通道码并存入 localStorage，免去手动开通：
+
+```js
+YfPush.create({ mcpSource: 'my-website' }).autoGetChannelCode({
+  referer: 'https://ce.phprm.com/teakong/',   // 该用户的名称空间，必传，但不需要真的存在
+  onSuccess: function (code) { console.log('组合通道码', code); },
+  onError: function (err) { console.error(err); }  // 失败则引导用户自行开通
+});
+```
+
+方法内部依次请求 `getDataInfo` → MCP `get_access_token` → `/oauth2/push/channel/list`，任一步失败即放弃。详见 `push-sdk-guide.html` 第 4.6 节。
+
 ## 通道码与推送链路
 
 - **通道码**：32 位，仅存浏览器 LocalStorage（key `phprm_channel_code`），不会上传到本仓库任何服务；支持把本页网址发给好友实现免登录进入管理（`?channelCode=xxx`）。
